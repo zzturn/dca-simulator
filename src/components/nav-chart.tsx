@@ -80,12 +80,15 @@ export function NavChart({
     return navHistory.filter((p) => p.date >= startDate);
   }, [navHistory, timeRange]);
 
-  // 创建投资日期到投资记录的映射
+  // 创建投资日期到投资记录的映射（只包含实际投资日，amount > 0）
   const investMap = useMemo(() => {
     const map = new Map<string, InvestmentRecord>();
     if (investRecords) {
       investRecords.forEach((r) => {
-        map.set(r.date, r);
+        // 只记录实际投资的日期（金额 > 0）
+        if (r.amount > 0) {
+          map.set(r.date, r);
+        }
       });
     }
     return map;

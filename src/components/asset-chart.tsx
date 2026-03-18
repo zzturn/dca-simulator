@@ -18,13 +18,52 @@ interface AssetChartProps {
   records: InvestmentRecord[];
 }
 
+// 盈利颜色
+const PROFIT_COLOR = "#F53F3F";
+// 亏损颜色
+const LOSS_COLOR = "#00B42A";
+
 export function AssetChart({ records }: AssetChartProps) {
-  // 采样数据
-  const sampledData = useMemo(() => {
-    if (records.length <= 500) return records;
+  // 采样数据并计算盈亏数据（带平滑转折点）
+  const chartData = useMemo(() => {
+    const processData = (data: InvestmentRecord[]) => {
+      return data.map((r, i, arr) => {
+        const isProfit = r.currentValue >= r.totalCost;
+        const prevIsProfit = i > 0 ? arr[i - 1].currentValue >= arr[i - 1].totalCost : isProfit;
+        const nextIsProfit = i < arr.length - 1 ? arr[i + 1].currentValue >= arr[i + 1].totalCost : isProfit;
+
+        // 当前点或相邻点是转折点时，两边都显示（保持平滑）
+        const isTransitionPoint = isProfit !== prevIsProfit || isProfit !== nextIsProfit;
+
+        return {
+          ...r,
+          // 盈利时显示市值，转折点也显示
+          profitValue: (isProfit || isTransitionPoint) ? r.currentValue : null,
+          // 亏损时显示市值，转折点也显示
+          lossValue: (!isProfit || isTransitionPoint) ? r.currentValue : null,
+        };
+      });
+    };
+
+    if (records.length <= 500) {
+      return processData(records);
+    }
 
     const sampleRate = Math.ceil(records.length / 500);
-    return records.filter((_, index) => index % sampleRate === 0);
+    const sampled = processData(records.filter((_, index) => index % sampleRate === 0));
+
+    // 确保包含最后一条记录
+    const lastRecord = records[records.length - 1];
+    if (sampled[sampled.length - 1]?.date !== lastRecord.date) {
+      const isProfit = lastRecord.currentValue >= lastRecord.totalCost;
+      sampled.push({
+        ...lastRecord,
+        profitValue: isProfit ? lastRecord.currentValue : null,
+        lossValue: !isProfit ? lastRecord.currentValue : null,
+      } as typeof sampled[0]);
+    }
+
+    return sampled;
   }, [records]);
 
   // 格式化X轴日期
@@ -45,8 +84,10 @@ export function AssetChart({ records }: AssetChartProps) {
     label?: string;
   }) => {
     if (active && payload && payload.length) {
-      const current = payload.find((p) => p.dataKey === "currentValue")?.value || 0;
-      const cost = payload.find((p) => p.dataKey === "totalCost")?.value || 0;
+      // 从 payload 中获取 currentValue 和 totalCost
+      const entry = payload[0]?.payload;
+      const current = entry?.currentValue || 0;
+      const cost = entry?.totalCost || 0;
       const profit = current - cost;
 
       return (
@@ -72,9 +113,6 @@ export function AssetChart({ records }: AssetChartProps) {
     return null;
   };
 
-  // 判断整体盈亏
-  const isOverallProfit = records.length > 0 && records[records.length - 1].profit >= 0;
-
   return (
     <div className="card-professional p-6">
       <h3 className="text-lg font-semibold text-text-1 mb-6">资产曲线</h3>
@@ -82,21 +120,19 @@ export function AssetChart({ records }: AssetChartProps) {
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
-            data={sampledData}
+            data={chartData}
             margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
           >
             <defs>
-              <linearGradient id="assetGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor={isOverallProfit ? "#F53F3F" : "#13C2C2"}
-                  stopOpacity={0.2}
-                />
-                <stop
-                  offset="95%"
-                  stopColor={isOverallProfit ? "#F53F3F" : "#13C2C2"}
-                  stopOpacity={0}
-                />
+              {/* 盈利区域渐变 - 红色 */}
+              <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={PROFIT_COLOR} stopOpacity={0.25} />
+                <stop offset="100%" stopColor={PROFIT_COLOR} stopOpacity={0.02} />
+              </linearGradient>
+              {/* 亏损区域渐变 - 绿色 */}
+              <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={LOSS_COLOR} stopOpacity={0.25} />
+                <stop offset="100%" stopColor={LOSS_COLOR} stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E6EB" />
@@ -112,25 +148,42 @@ export function AssetChart({ records }: AssetChartProps) {
               axisLine={{ stroke: "#E5E6EB" }}
             />
             <Tooltip content={<CustomTooltip />} />
-            {/* 成本线 */}
+
+            {/* 累计投入 - 平滑实线 */}
             <Area
               type="monotone"
               dataKey="totalCost"
               stroke="#86909C"
-              strokeDasharray="5 5"
-              fill="transparent"
-              name="累计投入"
               strokeWidth={1.5}
+              fill="transparent"
+              dot={false}
+              name="累计投入"
             />
-            {/* 市值曲线 */}
+
+            {/* 盈利区域 - 红色（只在盈利时显示） */}
             <Area
               type="monotone"
-              dataKey="currentValue"
-              stroke={isOverallProfit ? "#F53F3F" : "#13C2C2"}
+              dataKey="profitValue"
+              stroke={PROFIT_COLOR}
               strokeWidth={2}
+              fill="url(#profitGradient)"
               fillOpacity={1}
-              fill="url(#assetGradient)"
-              name="当前市值"
+              dot={false}
+              name="盈利市值"
+              connectNulls={false}
+            />
+
+            {/* 亏损区域 - 绿色（只在亏损时显示） */}
+            <Area
+              type="monotone"
+              dataKey="lossValue"
+              stroke={LOSS_COLOR}
+              strokeWidth={2}
+              fill="url(#lossGradient)"
+              fillOpacity={1}
+              dot={false}
+              name="亏损市值"
+              connectNulls={false}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -139,20 +192,16 @@ export function AssetChart({ records }: AssetChartProps) {
       {/* 图例 */}
       <div className="mt-4 flex items-center gap-6 text-sm text-text-3">
         <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-0.5 bg-text-3"
-            style={{ borderStyle: "dashed" }}
-          />
+          <div className="w-8 h-0.5 bg-text-3 rounded" />
           <span>累计投入</span>
         </div>
         <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-0.5 rounded"
-            style={{
-              backgroundColor: isOverallProfit ? "#F53F3F" : "#13C2C2",
-            }}
-          />
-          <span>当前市值</span>
+          <div className="w-8 h-0.5 rounded" style={{ backgroundColor: PROFIT_COLOR }} />
+          <span>盈利区</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-0.5 rounded" style={{ backgroundColor: LOSS_COLOR }} />
+          <span>亏损区</span>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import type { DCAConfig, NavPoint, SimulationResult, InvestmentRecord } from "./types";
-import { addDaysToDate, formatDate, findNextTradeDay, findNearestTradeDay } from "./date-utils";
+import { formatDate, findNextTradeDay, findNearestTradeDay } from "./date-utils";
 
 // 生成定投日期列表
 function generateInvestDates(
@@ -121,7 +121,6 @@ export function simulateDCA(
   }
 
   // 找到结束日期对应的净值（用于最终市值计算）
-  // 在结束日期或之前找到最近的交易日净值
   const endNavPoint = findNearestTradeDay(config.endDate, tradeDays);
   const finalNav = endNavPoint ? (navMap.get(endNavPoint)?.nav || 0) : 0;
 
@@ -129,52 +128,91 @@ export function simulateDCA(
     return null;
   }
 
-  // 记录每次投资
-  const records: InvestmentRecord[] = [];
+  // 创建投资日期集合，用于快速查找
+  const investDateSet = new Set(investDates);
+
+  // 计算每个交易日的持仓情况
+  // 累计份额和成本按投资日期累加
   let totalShares = 0;
   let totalCost = 0;
 
-  // 跟踪最大回撤（使用结束日期作为参考点）
+  // 记录每次投资（简化版，只记录投资信息）
+  const investRecords: Array<{
+    date: string;
+    nav: number;
+    amount: number;
+    shares: number;
+  }> = [];
+
+  // 用于计算每日资产的映射
+  const dailyHoldings = new Map<string, { shares: number; cost: number }>();
+
+  // 遍历所有交易日，计算每日持仓
+  for (const date of tradeDays) {
+    if (date < config.startDate || date > config.endDate) {
+      continue;
+    }
+
+    // 如果是投资日，增加持仓
+    if (investDateSet.has(date)) {
+      const navPoint = navMap.get(date);
+      if (navPoint) {
+        const nav = navPoint.nav;
+        const amount = config.amount;
+        const shares = amount / nav;
+
+        totalShares += shares;
+        totalCost += amount;
+
+        investRecords.push({
+          date,
+          nav,
+          amount,
+          shares,
+        });
+      }
+    }
+
+    // 记录当日收盘时的持仓
+    dailyHoldings.set(date, {
+      shares: totalShares,
+      cost: totalCost,
+    });
+  }
+
+  // 生成每日资产记录（用于图表显示）
+  const records: InvestmentRecord[] = [];
   let peak = 0;
   let maxDrawdown = 0;
   let maxDrawdownDate = "";
 
-  for (const date of investDates) {
-    // 获取当日净值
-    let navPoint = navMap.get(date);
-
-    // 如果当日没有净值（停牌），尝试向前查找
-    if (!navPoint) {
-      const nearestDate = findNearestTradeDay(date, tradeDays);
-      if (nearestDate) {
-        navPoint = navMap.get(nearestDate);
-      }
-    }
-
-    if (!navPoint) {
-      // 无法获取净值，跳过本次投资
+  for (const date of tradeDays) {
+    if (date < config.startDate || date > config.endDate) {
       continue;
     }
 
-    const nav = navPoint.nav;
-    const amount = config.amount;
-    const shares = amount / nav;
+    const holding = dailyHoldings.get(date);
+    if (!holding || holding.shares === 0) {
+      continue;
+    }
 
-    totalShares += shares;
-    totalCost += amount;
+    const navPoint = navMap.get(date);
+    if (!navPoint) {
+      continue;
+    }
 
-    // 计算当前市值（使用结束日期对应的净值）
-    const currentValue = totalShares * finalNav;
-    const profit = currentValue - totalCost;
-    const profitRate = totalCost > 0 ? profit / totalCost : 0;
+    const currentValue = holding.shares * navPoint.nav;
+    const profit = currentValue - holding.cost;
+    const profitRate = holding.cost > 0 ? profit / holding.cost : 0;
 
+    // 只在有持仓时记录
     records.push({
       date,
-      nav,
-      amount,
-      shares,
-      totalShares,
-      totalCost,
+      nav: navPoint.nav,
+      amount: 0, // 非投资日为0
+      shares: 0, // 非投资日为0
+      totalShares: holding.shares,
+      totalCost: holding.cost,
       currentValue,
       profit,
       profitRate,
@@ -197,9 +235,25 @@ export function simulateDCA(
 
   const lastRecord = records[records.length - 1];
 
+  // 为投资记录添加投资信息
+  const investmentDates = new Map<string, { amount: number; shares: number }>();
+  for (const inv of investRecords) {
+    investmentDates.set(inv.date, { amount: inv.amount, shares: inv.shares });
+  }
+
+  // 更新records中的投资信息
+  const enrichedRecords = records.map((r) => {
+    const inv = investmentDates.get(r.date);
+    return {
+      ...r,
+      amount: inv?.amount || 0,
+      shares: inv?.shares || 0,
+    };
+  });
+
   return {
     config,
-    records,
+    records: enrichedRecords,
     totalInvestment: lastRecord.totalCost,
     totalShares: lastRecord.totalShares,
     averageCost: lastRecord.totalShares > 0 ? lastRecord.totalCost / lastRecord.totalShares : 0,
@@ -207,7 +261,7 @@ export function simulateDCA(
     currentValue: lastRecord.currentValue,
     profit: lastRecord.profit,
     profitRate: lastRecord.profitRate,
-    investCount: records.length,
+    investCount: investRecords.length,
     maxDrawdown,
     maxDrawdownDate,
   };
@@ -217,8 +271,10 @@ export function simulateDCA(
 export function getInvestPoints(
   records: InvestmentRecord[]
 ): { date: string; nav: number }[] {
-  return records.map((r) => ({
-    date: r.date,
-    nav: r.nav,
-  }));
+  return records
+    .filter((r) => r.amount > 0)
+    .map((r) => ({
+      date: r.date,
+      nav: r.nav,
+    }));
 }

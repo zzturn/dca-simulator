@@ -38,7 +38,7 @@ export function getTimeRangeStart(range: TimeRange): string | null {
   }
 }
 
-// 在交易日历中查找下一个交易日
+// 在交易日历中查找下一个交易日（向后查找，包含当天）
 export function findNextTradeDay(
   dateStr: string,
   tradeDays: string[]
@@ -52,7 +52,7 @@ export function findNextTradeDay(
   return null;
 }
 
-// 在交易日历中查找最近的交易日（向前查找）
+// 在交易日历中查找最近的交易日（向前查找，不包含当天）
 export function findNearestTradeDay(
   dateStr: string,
   tradeDays: string[]
