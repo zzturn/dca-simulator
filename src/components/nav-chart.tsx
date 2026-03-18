@@ -2,19 +2,19 @@
 
 import { useMemo, useState } from "react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceDot,
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "./ui/skeleton";
 import type { NavPoint, InvestmentRecord, TimeRange } from "@/lib/types";
 import { getTimeRangeStart } from "@/lib/date-utils";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface NavChartProps {
   navHistory: NavPoint[];
@@ -32,6 +32,38 @@ const timeRangeOptions: { value: TimeRange; label: string }[] = [
   { value: "6m", label: "6月" },
 ];
 
+// 自定义Dot组件 - 显示投资点
+interface CustomDotProps {
+  cx?: number;
+  cy?: number;
+  payload?: {
+    date: string;
+    nav: number;
+    accumulatedNav: number;
+    investAmount?: number;
+    investShares?: number;
+    isInvestPoint?: boolean;
+  };
+}
+
+function CustomDot({ cx, cy, payload }: CustomDotProps) {
+  if (!payload?.isInvestPoint || cx === undefined || cy === undefined) {
+    return null;
+  }
+
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={3}
+      fill="#F53F3F"
+      stroke="#fff"
+      strokeWidth={1}
+      style={{ cursor: "pointer" }}
+    />
+  );
+}
+
 export function NavChart({
   navHistory,
   investRecords,
@@ -48,26 +80,37 @@ export function NavChart({
     return navHistory.filter((p) => p.date >= startDate);
   }, [navHistory, timeRange]);
 
-  // 投资点
-  const investPoints = useMemo(() => {
-    if (!investRecords) return [];
-    const startDate = getTimeRangeStart(timeRange);
-    const filtered = startDate
-      ? investRecords.filter((r) => r.date >= startDate)
-      : investRecords;
+  // 创建投资日期到投资记录的映射
+  const investMap = useMemo(() => {
+    const map = new Map<string, InvestmentRecord>();
+    if (investRecords) {
+      investRecords.forEach((r) => {
+        map.set(r.date, r);
+      });
+    }
+    return map;
+  }, [investRecords]);
 
-    return filtered.map((r) => ({
-      date: r.date,
-      nav: r.nav,
-    }));
-  }, [investRecords, timeRange]);
-
-  // 采样数据
+  // 采样数据（确保包含首尾和所有投资日期）
   const chartData = useMemo(() => {
-    if (filteredData.length <= 1000) return filteredData;
+    // 为每个数据点添加投资信息
+    const enrichData = (data: NavPoint[]) =>
+      data.map((p) => {
+        const investRecord = investMap.get(p.date);
+        return {
+          ...p,
+          investAmount: investRecord?.amount,
+          investShares: investRecord?.shares,
+          isInvestPoint: !!investRecord,
+        };
+      });
+
+    if (filteredData.length <= 1000) {
+      return enrichData(filteredData);
+    }
 
     const sampleRate = Math.ceil(filteredData.length / 1000);
-    const sampled: typeof filteredData = [];
+    const sampled: NavPoint[] = [];
     for (let i = 0; i < filteredData.length; i += sampleRate) {
       sampled.push(filteredData[i]);
     }
@@ -76,17 +119,17 @@ export function NavChart({
       sampled.push(lastPoint);
     }
 
+    // 确保投资日期都在采样数据中
     const sampledDateSet = new Set(sampled.map((p) => p.date));
-    const investDateSet = new Set(investPoints.map((p) => p.date));
     const missingPoints = filteredData.filter(
-      (p) => investDateSet.has(p.date) && !sampledDateSet.has(p.date)
+      (p) => investMap.has(p.date) && !sampledDateSet.has(p.date)
     );
 
     const combined = [...sampled, ...missingPoints];
     combined.sort((a, b) => a.date.localeCompare(b.date));
 
-    return combined;
-  }, [filteredData, investPoints]);
+    return enrichData(combined);
+  }, [filteredData, investMap]);
 
   // 格式化X轴日期
   const formatXAxis = (date: string) => {
@@ -102,24 +145,59 @@ export function NavChart({
     label,
   }: {
     active?: boolean;
-    payload?: Array<{ value: number; dataKey: string; color: string }>;
+    payload?: Array<{
+      value: number;
+      dataKey: string;
+      color: string;
+      payload?: {
+        date: string;
+        nav: number;
+        accumulatedNav: number;
+        investAmount?: number;
+        investShares?: number;
+        isInvestPoint?: boolean;
+      };
+    }>;
     label?: string;
   }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white border border-border-default rounded-xl shadow-popup p-3">
-          <p className="text-sm font-medium text-text-1 mb-2">{label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.dataKey === "nav"
-                ? `单位净值: ${entry.value.toFixed(4)}`
-                : `累计净值: ${entry.value.toFixed(4)}`}
+    if (!active || !payload || payload.length === 0) return null;
+
+    const firstPayload = payload[0]?.payload;
+    const isInvestPoint = firstPayload?.isInvestPoint && firstPayload?.investAmount != null;
+
+    const navEntry = payload.find((p) => p.dataKey === "nav");
+    const accumulatedEntry = payload.find((p) => p.dataKey === "accumulatedNav");
+
+    return (
+      <div className="bg-white border border-border-default rounded-xl p-3 shadow-lg">
+        <p className="text-sm font-medium text-text-1 mb-2">{label}</p>
+
+        {/* 净值信息 */}
+        {navEntry && (
+          <p className="text-sm" style={{ color: "#1A5CFE" }}>
+            单位净值: {navEntry.value.toFixed(4)}
+          </p>
+        )}
+        {accumulatedEntry && showAccumulated && (
+          <p className="text-sm" style={{ color: "#00B42A" }}>
+            累计净值: {accumulatedEntry.value.toFixed(4)}
+          </p>
+        )}
+
+        {/* 投资信息（如果是投资点） */}
+        {isInvestPoint && (
+          <div className="mt-2 pt-2 border-t border-border-default">
+            <p className="text-xs text-text-3 mb-1">定投买入</p>
+            <p className="text-sm text-profit font-medium">
+              金额: {formatCurrency(firstPayload.investAmount as number)}
             </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
+            <p className="text-sm text-text-2">
+              份额: {formatNumber(firstPayload.investShares as number, 2)}
+            </p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -157,14 +235,21 @@ export function NavChart({
       {/* 图表 */}
       <div className="h-[350px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
+          <AreaChart
             data={chartData}
             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
           >
             <defs>
-              <linearGradient id="navGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#1A5CFE" stopOpacity={0.1} />
-                <stop offset="95%" stopColor="#1A5CFE" stopOpacity={0} />
+              {/* 净值线渐变填充 */}
+              <linearGradient id="navAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#1A5CFE" stopOpacity={0.25} />
+                <stop offset="50%" stopColor="#1A5CFE" stopOpacity={0.1} />
+                <stop offset="100%" stopColor="#1A5CFE" stopOpacity={0} />
+              </linearGradient>
+              {/* 累计净值渐变填充 */}
+              <linearGradient id="accNavAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#00B42A" stopOpacity={0.15} />
+                <stop offset="100%" stopColor="#00B42A" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E6EB" />
@@ -181,37 +266,49 @@ export function NavChart({
               axisLine={{ stroke: "#E5E6EB" }}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Line
+
+            {/* 单位净值渐变填充区域 */}
+            <Area
+              type="monotone"
+              dataKey="nav"
+              stroke="none"
+              fill="url(#navAreaGradient)"
+              fillOpacity={1}
+            />
+
+            {/* 单位净值线 - 只在投资点显示dot */}
+            <Area
               type="monotone"
               dataKey="nav"
               stroke="#1A5CFE"
-              name="单位净值"
-              dot={false}
               strokeWidth={2}
+              fill="none"
+              dot={<CustomDot />}
             />
+
+            {/* 累计净值渐变填充区域 */}
             {showAccumulated && (
-              <Line
+              <Area
+                type="monotone"
+                dataKey="accumulatedNav"
+                stroke="none"
+                fill="url(#accNavAreaGradient)"
+                fillOpacity={1}
+              />
+            )}
+
+            {/* 累计净值线 */}
+            {showAccumulated && (
+              <Area
                 type="monotone"
                 dataKey="accumulatedNav"
                 stroke="#00B42A"
-                name="累计净值"
-                dot={false}
                 strokeWidth={2}
+                fill="none"
+                dot={false}
               />
             )}
-            {/* 定投买入点 */}
-            {investPoints.map((point, index) => (
-              <ReferenceDot
-                key={index}
-                x={point.date}
-                y={point.nav}
-                r={3}
-                fill="#F53F3F"
-                stroke="#fff"
-                strokeWidth={1.5}
-              />
-            ))}
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
 

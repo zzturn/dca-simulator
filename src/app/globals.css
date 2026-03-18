@@ -78,12 +78,13 @@
 @layer components {
   /* 卡片基础样式 */
   .card-professional {
-    @apply bg-card-bg rounded-2xl shadow-card;
+    @apply bg-card-bg rounded-2xl;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     transition: box-shadow 0.2s ease;
   }
 
   .card-professional:hover {
-    @apply shadow-card-hover;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
 
   /* 利润/亏损颜色 */
