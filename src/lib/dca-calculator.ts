@@ -53,7 +53,7 @@ function generateInvestDates(
         1
       );
     }
-  } else {
+  } else if (config.frequency === "weekly") {
     // 每周定投
     const dayOfWeek = config.dayOfWeek || 1; // 1=周一
 
@@ -90,6 +90,14 @@ function generateInvestDates(
 
       // 移到下周
       currentDate = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    }
+  } else {
+    // 每个交易日定投（每日定投）
+    // 直接使用所有在日期范围内的交易日
+    for (const tradeDay of tradeDays) {
+      if (tradeDay >= start && tradeDay <= end) {
+        dates.push(tradeDay);
+      }
     }
   }
 

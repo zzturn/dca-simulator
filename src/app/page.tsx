@@ -265,6 +265,7 @@ export default function Home() {
               <NavChart
                 navHistory={navHistory}
                 investRecords={result?.records}
+                frequency={config.frequency}
                 timeRange={timeRange}
                 onTimeRangeChange={setTimeRange}
               />

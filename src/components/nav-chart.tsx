@@ -12,13 +12,14 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "./ui/skeleton";
-import type { NavPoint, InvestmentRecord, TimeRange } from "@/lib/types";
+import type { NavPoint, InvestmentRecord, TimeRange, DCAConfig } from "@/lib/types";
 import { getTimeRangeStart } from "@/lib/date-utils";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface NavChartProps {
   navHistory: NavPoint[];
   investRecords?: InvestmentRecord[];
+  frequency: DCAConfig["frequency"];
   timeRange: TimeRange;
   onTimeRangeChange: (range: TimeRange) => void;
   isLoading?: boolean;
@@ -60,6 +61,7 @@ function createCustomDot(investDates: Set<string>) {
 export function NavChart({
   navHistory,
   investRecords,
+  frequency,
   timeRange,
   onTimeRangeChange,
   isLoading,
@@ -72,10 +74,12 @@ export function NavChart({
     return startDate ? new Date(startDate).getTime() : null;
   }, [timeRange]);
 
-  // 投资日期集合（用于图表数据）
+  // 投资日期集合（用于图表数据）- 每天定投时不显示买入点
   const investDates = useMemo(() => {
+    // 每天定投时，不显示买入点（因为每天都有交易）
+    if (frequency === "daily") return new Set<string>();
     return new Set(investRecords?.filter(r => r.amount > 0).map(r => r.date) || []);
-  }, [investRecords]);
+  }, [investRecords, frequency]);
 
   // 图表数据始终使用全部数据，添加时间戳字段（实现横向滑动效果）
   // 同时确保投资日期的点被包含
@@ -351,10 +355,13 @@ export function NavChart({
 
       {/* 图例 */}
       <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-text-3">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-profit" />
-          <span>定投买入点</span>
-        </div>
+        {/* 每天定投时不显示买入点图例 */}
+        {frequency !== "daily" && (
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-profit" />
+            <span>定投买入点</span>
+          </div>
+        )}
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"

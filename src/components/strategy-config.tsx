@@ -48,33 +48,36 @@ export function StrategyConfig({
           options={[
             { value: "monthly", label: "每月" },
             { value: "weekly", label: "每周" },
+            { value: "daily", label: "每天" },
           ]}
           value={config.frequency}
-          onChange={(value: "monthly" | "weekly") =>
+          onChange={(value: "monthly" | "weekly" | "daily") =>
             updateConfig({ frequency: value })
           }
         />
       </div>
 
-      {/* 定投日期 */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-text-2">
-          {config.frequency === "monthly" ? "每月定投日" : "每周定投日"}
-        </label>
-        {config.frequency === "monthly" ? (
-          <CalendarMatrix
-            selectedDays={config.dayOfMonth ? [config.dayOfMonth] : [1]}
-            onChange={(days) => updateConfig({ dayOfMonth: days[0] })}
-            mode="single"
-            maxDays={28}
-          />
-        ) : (
-          <WeekDaySelector
-            selectedDay={config.dayOfWeek || 1}
-            onChange={(day) => updateConfig({ dayOfWeek: day })}
-          />
-        )}
-      </div>
+      {/* 定投日期 - 每天定投时不显示 */}
+      {config.frequency !== "daily" && (
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-text-2">
+            {config.frequency === "monthly" ? "每月定投日" : "每周定投日"}
+          </label>
+          {config.frequency === "monthly" ? (
+            <CalendarMatrix
+              selectedDays={config.dayOfMonth ? [config.dayOfMonth] : [1]}
+              onChange={(days) => updateConfig({ dayOfMonth: days[0] })}
+              mode="single"
+              maxDays={28}
+            />
+          ) : (
+            <WeekDaySelector
+              selectedDay={config.dayOfWeek || 1}
+              onChange={(day) => updateConfig({ dayOfWeek: day })}
+            />
+          )}
+        </div>
+      )}
 
       {/* 定投金额 */}
       <div className="space-y-3">
@@ -118,105 +121,107 @@ export function StrategyConfig({
         </div>
       </div>
 
-      {/* 非交易日规则 */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-text-2">非交易日处理</label>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="w-4 h-4 text-text-3 cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>
-                  当定投日遇到周末或节假日时：
-                  <br />
-                  <strong>顺延</strong>：在下一个交易日执行买入
-                  <br />
-                  <strong>跳过</strong>：跳过本次定投
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-        <div className="flex gap-4">
-          <label
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all",
-              config.nonTradeDayRule === "next"
-                ? "bg-primary-50 border-2 border-primary"
-                : "bg-gray-50 border-2 border-transparent hover:border-border-default"
-            )}
-          >
-            <input
-              type="radio"
-              name="nonTradeDayRule"
-              value="next"
-              checked={config.nonTradeDayRule === "next"}
-              onChange={() => updateConfig({ nonTradeDayRule: "next" })}
-              className="sr-only"
-            />
-            <div
+      {/* 非交易日规则 - 每日定投时隐藏（因为每日定投只在交易日执行） */}
+      {config.frequency !== "daily" && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-text-2">非交易日处理</label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-4 h-4 text-text-3 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>
+                    当定投日遇到周末或节假日时：
+                    <br />
+                    <strong>顺延</strong>：在下一个交易日执行买入
+                    <br />
+                    <strong>跳过</strong>：跳过本次定投
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="flex gap-4">
+            <label
               className={cn(
-                "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                "flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all",
                 config.nonTradeDayRule === "next"
-                  ? "border-primary"
-                  : "border-text-3"
+                  ? "bg-primary-50 border-2 border-primary"
+                  : "bg-gray-50 border-2 border-transparent hover:border-border-default"
               )}
             >
-              {config.nonTradeDayRule === "next" && (
-                <div className="w-2 h-2 rounded-full bg-primary" />
-              )}
-            </div>
-            <span
-              className={cn(
-                "text-sm",
-                config.nonTradeDayRule === "next" ? "text-primary" : "text-text-2"
-              )}
-            >
-              顺延到下一交易日
-            </span>
-          </label>
+              <input
+                type="radio"
+                name="nonTradeDayRule"
+                value="next"
+                checked={config.nonTradeDayRule === "next"}
+                onChange={() => updateConfig({ nonTradeDayRule: "next" })}
+                className="sr-only"
+              />
+              <div
+                className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                  config.nonTradeDayRule === "next"
+                    ? "border-primary"
+                    : "border-text-3"
+                )}
+              >
+                {config.nonTradeDayRule === "next" && (
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                )}
+              </div>
+              <span
+                className={cn(
+                  "text-sm",
+                  config.nonTradeDayRule === "next" ? "text-primary" : "text-text-2"
+                )}
+              >
+                顺延到下一交易日
+              </span>
+            </label>
 
-          <label
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all",
-              config.nonTradeDayRule === "skip"
-                ? "bg-primary-50 border-2 border-primary"
-                : "bg-gray-50 border-2 border-transparent hover:border-border-default"
-            )}
-          >
-            <input
-              type="radio"
-              name="nonTradeDayRule"
-              value="skip"
-              checked={config.nonTradeDayRule === "skip"}
-              onChange={() => updateConfig({ nonTradeDayRule: "skip" })}
-              className="sr-only"
-            />
-            <div
+            <label
               className={cn(
-                "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                "flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all",
                 config.nonTradeDayRule === "skip"
-                  ? "border-primary"
-                  : "border-text-3"
+                  ? "bg-primary-50 border-2 border-primary"
+                  : "bg-gray-50 border-2 border-transparent hover:border-border-default"
               )}
             >
-              {config.nonTradeDayRule === "skip" && (
-                <div className="w-2 h-2 rounded-full bg-primary" />
-              )}
-            </div>
-            <span
-              className={cn(
-                "text-sm",
-                config.nonTradeDayRule === "skip" ? "text-primary" : "text-text-2"
-              )}
-            >
-              跳过
-            </span>
-          </label>
+              <input
+                type="radio"
+                name="nonTradeDayRule"
+                value="skip"
+                checked={config.nonTradeDayRule === "skip"}
+                onChange={() => updateConfig({ nonTradeDayRule: "skip" })}
+                className="sr-only"
+              />
+              <div
+                className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                  config.nonTradeDayRule === "skip"
+                    ? "border-primary"
+                    : "border-text-3"
+                )}
+              >
+                {config.nonTradeDayRule === "skip" && (
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                )}
+              </div>
+              <span
+                className={cn(
+                  "text-sm",
+                  config.nonTradeDayRule === "skip" ? "text-primary" : "text-text-2"
+                )}
+              >
+                跳过
+              </span>
+            </label>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 错误提示 */}
       {error && (

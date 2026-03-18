@@ -22,7 +22,7 @@ export interface NavPoint {
 
 // 定投配置
 export interface DCAConfig {
-  frequency: "monthly" | "weekly"; // 定投频率
+  frequency: "monthly" | "weekly" | "daily"; // 定投频率
   dayOfMonth?: number; // 每月几号 (1-28)
   dayOfWeek?: number; // 每周周几 (1-7, 1=周一)
   amount: number; // 每次定投金额
