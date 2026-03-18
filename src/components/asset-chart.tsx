@@ -89,12 +89,12 @@ export function AssetChart({ records }: AssetChartProps) {
               <linearGradient id="assetGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor={isOverallProfit ? "#F53F3F" : "#00B42A"}
+                  stopColor={isOverallProfit ? "#F53F3F" : "#13C2C2"}
                   stopOpacity={0.2}
                 />
                 <stop
                   offset="95%"
-                  stopColor={isOverallProfit ? "#F53F3F" : "#00B42A"}
+                  stopColor={isOverallProfit ? "#F53F3F" : "#13C2C2"}
                   stopOpacity={0}
                 />
               </linearGradient>
@@ -126,7 +126,7 @@ export function AssetChart({ records }: AssetChartProps) {
             <Area
               type="monotone"
               dataKey="currentValue"
-              stroke={isOverallProfit ? "#F53F3F" : "#00B42A"}
+              stroke={isOverallProfit ? "#F53F3F" : "#13C2C2"}
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#assetGradient)"
@@ -149,7 +149,7 @@ export function AssetChart({ records }: AssetChartProps) {
           <div
             className="w-8 h-0.5 rounded"
             style={{
-              backgroundColor: isOverallProfit ? "#F53F3F" : "#00B42A",
+              backgroundColor: isOverallProfit ? "#F53F3F" : "#13C2C2",
             }}
           />
           <span>当前市值</span>

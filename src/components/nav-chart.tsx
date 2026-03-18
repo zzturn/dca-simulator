@@ -179,7 +179,7 @@ export function NavChart({
           </p>
         )}
         {accumulatedEntry && showAccumulated && (
-          <p className="text-sm" style={{ color: "#00B42A" }}>
+          <p className="text-sm" style={{ color: "#FA8C16" }}>
             累计净值: {accumulatedEntry.value.toFixed(4)}
           </p>
         )}
@@ -248,8 +248,8 @@ export function NavChart({
               </linearGradient>
               {/* 累计净值渐变填充 */}
               <linearGradient id="accNavAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#00B42A" stopOpacity={0.15} />
-                <stop offset="100%" stopColor="#00B42A" stopOpacity={0} />
+                <stop offset="0%" stopColor="#FA8C16" stopOpacity={0.15} />
+                <stop offset="100%" stopColor="#FA8C16" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E6EB" />
@@ -302,7 +302,7 @@ export function NavChart({
               <Area
                 type="monotone"
                 dataKey="accumulatedNav"
-                stroke="#00B42A"
+                stroke="#FA8C16"
                 strokeWidth={2}
                 fill="none"
                 dot={false}
