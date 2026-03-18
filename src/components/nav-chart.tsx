@@ -66,12 +66,72 @@ export function NavChart({
 }: NavChartProps) {
   const [showAccumulated, setShowAccumulated] = useState(false);
 
-  // 过滤时间范围
-  const filteredData = useMemo(() => {
+  // 计算时间范围的起始时间戳
+  const timeRangeStartTs = useMemo(() => {
     const startDate = getTimeRangeStart(timeRange);
-    if (!startDate) return navHistory;
-    return navHistory.filter((p) => p.date >= startDate);
-  }, [navHistory, timeRange]);
+    return startDate ? new Date(startDate).getTime() : null;
+  }, [timeRange]);
+
+  // 投资日期集合（用于图表数据）
+  const investDates = useMemo(() => {
+    return new Set(investRecords?.filter(r => r.amount > 0).map(r => r.date) || []);
+  }, [investRecords]);
+
+  // 图表数据始终使用全部数据，添加时间戳字段（实现横向滑动效果）
+  // 同时确保投资日期的点被包含
+  const chartData = useMemo(() => {
+    if (navHistory.length === 0) return [];
+
+    // 创建日期到数据点的映射
+    const navMap = new Map(navHistory.map(p => [p.date, p]));
+
+    // 添加时间戳
+    const withTs = navHistory.map(p => ({
+      ...p,
+      ts: new Date(p.date).getTime(),
+    }));
+
+    // 数据量小，直接返回
+    if (withTs.length <= 1000) {
+      return withTs;
+    }
+
+    // 均匀采样
+    const sampleRate = Math.ceil(withTs.length / 1000);
+    const sampled: (NavPoint & { ts: number })[] = [];
+    for (let i = 0; i < withTs.length; i += sampleRate) {
+      sampled.push(withTs[i]);
+    }
+    const lastPoint = withTs[withTs.length - 1];
+    if (sampled[sampled.length - 1]?.date !== lastPoint.date) {
+      sampled.push(lastPoint);
+    }
+
+    // 添加投资日期的点（确保红点能显示）
+    const sampledDates = new Set(sampled.map(p => p.date));
+    investDates.forEach((date) => {
+      if (!sampledDates.has(date)) {
+        const navPoint = navMap.get(date);
+        if (navPoint) {
+          sampled.push({
+            ...navPoint,
+            ts: new Date(navPoint.date).getTime(),
+          });
+        }
+      }
+    });
+
+    // 按时间戳排序
+    sampled.sort((a, b) => a.ts - b.ts);
+
+    return sampled;
+  }, [navHistory, investDates]);
+
+  // XAxis domain - 控制显示范围（时间戳）
+  const xAxisDomain = useMemo((): [number | string, number | string] => {
+    if (timeRangeStartTs === null) return ["dataMin", "dataMax"];
+    return [timeRangeStartTs, "dataMax"];
+  }, [timeRangeStartTs]);
 
   // 投资点数据（用于 Tooltip）
   const investPointsMap = useMemo(() => {
@@ -84,58 +144,20 @@ export function NavChart({
     return map;
   }, [investRecords]);
 
-  // 投资日期集合（用于图表数据）
-  const investDates = useMemo(() => {
-    return new Set(investRecords?.filter(r => r.amount > 0).map(r => r.date) || []);
-  }, [investRecords]);
-
-  // 图表数据 - 采样 + 投资日期
-  // 采样只依赖 filteredData（稳定），投资日期在采样后添加（不影响曲线形状）
-  const chartData = useMemo(() => {
-    if (filteredData.length === 0) return [];
-
-    // 第一步：从 filteredData 进行均匀采样（这部分是稳定的）
-    let sampled: NavPoint[];
-    if (filteredData.length <= 1000) {
-      sampled = [...filteredData];
-    } else {
-      const sampleRate = Math.ceil(filteredData.length / 1000);
-      sampled = [];
-      for (let i = 0; i < filteredData.length; i += sampleRate) {
-        sampled.push(filteredData[i]);
-      }
-      const lastPoint = filteredData[filteredData.length - 1];
-      if (sampled[sampled.length - 1]?.date !== lastPoint.date) {
-        sampled.push(lastPoint);
-      }
-    }
-
-    // 第二步：创建已采样日期的集合
-    const sampledDates = new Set(sampled.map(p => p.date));
-
-    // 第三步：添加投资日期（从 filteredData 获取对应的 NAV 点）
-    // 这些点在曲线上已经存在，添加它们只是为了确保红点能显示
-    const filteredDataMap = new Map(filteredData.map(p => [p.date, p]));
-    Array.from(investDates).forEach((date) => {
-      if (!sampledDates.has(date)) {
-        const navPoint = filteredDataMap.get(date);
-        if (navPoint) {
-          sampled.push(navPoint);
-        }
-      }
-    });
-
-    // 按日期排序
-    sampled.sort((a, b) => a.date.localeCompare(b.date));
-
-    return sampled;
-  }, [filteredData, investDates]);
-
-  // 格式化X轴日期
-  const formatXAxis = (date: string) => {
-    if (!date) return "";
-    const d = new Date(date);
+  // 格式化X轴时间戳为日期
+  const formatXAxis = (ts: number) => {
+    if (!ts) return "";
+    const d = new Date(ts);
     return `${d.getMonth() + 1}/${d.getDate()}`;
+  };
+
+  // 格式化时间戳为日期字符串（用于 Tooltip）
+  const formatTimestamp = (ts: number) => {
+    const d = new Date(ts);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   };
 
   // 自定义Tooltip
@@ -149,14 +171,15 @@ export function NavChart({
       value: number;
       dataKey: string;
       payload?: {
-        date: string;
+        date?: string;
+        ts?: number;
         nav: number;
         accumulatedNav?: number;
         amount?: number;
         shares?: number;
       };
     }>;
-    label?: string;
+    label?: number; // 时间戳
   }) => {
     if (!active || !payload || payload.length === 0) return null;
 
@@ -164,11 +187,14 @@ export function NavChart({
     const allPayloads = payload.map((p) => p.payload).filter(Boolean);
     const firstPayload = allPayloads[0];
 
-    // 检查是否是投资点（来自散点或面积图）
-    const investRecord = firstPayload?.amount
-      ? { amount: firstPayload.amount, shares: firstPayload.shares! }
-      : firstPayload?.date
+    // 格式化日期（label 是时间戳）
+    const dateStr = label ? formatTimestamp(label) : (firstPayload?.date || "");
+
+    // 检查是否是投资点
+    const investRecord = firstPayload?.date
       ? investPointsMap.get(firstPayload.date)
+      : dateStr
+      ? investPointsMap.get(dateStr)
       : null;
     const isInvestPoint = !!investRecord;
 
@@ -177,7 +203,7 @@ export function NavChart({
 
     return (
       <div className="bg-white border border-border-default rounded-xl p-3 shadow-lg">
-        <p className="text-sm font-medium text-text-1 mb-2">{label}</p>
+        <p className="text-sm font-medium text-text-1 mb-2">{dateStr}</p>
 
         {/* 净值信息 */}
         {navValue !== undefined && (
@@ -261,7 +287,11 @@ export function NavChart({
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E6EB" />
             <XAxis
-              dataKey="date"
+              dataKey="ts"
+              type="number"
+              domain={xAxisDomain}
+              scale="time"
+              allowDataOverflow
               tickFormatter={formatXAxis}
               tick={{ fontSize: 12, fill: "#86909C" }}
               axisLine={{ stroke: "#E5E6EB" }}
