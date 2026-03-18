@@ -1,17 +1,9 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { AnimatedNumber } from "./ui/animated-number";
 import type { SimulationResult } from "@/lib/types";
 import { formatCurrency, formatPercent, formatNumber } from "@/lib/utils";
-import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  PiggyBank,
-  BarChart3,
-  Target,
-  AlertTriangle,
-} from "lucide-react";
 
 interface MetricsCardsProps {
   result: SimulationResult;
@@ -22,63 +14,74 @@ export function MetricsCards({ result }: MetricsCardsProps) {
 
   const metrics = [
     {
-      title: "累计投入",
-      value: formatCurrency(result.totalInvestment),
-      icon: PiggyBank,
-      color: "text-gray-700",
+      label: "累计投入",
+      value: result.totalInvestment,
+      format: (v: number) => formatCurrency(v),
     },
     {
-      title: "当前市值",
-      value: formatCurrency(result.currentValue),
-      icon: DollarSign,
-      color: "text-gray-700",
+      label: "当前市值",
+      value: result.currentValue,
+      format: (v: number) => formatCurrency(v),
     },
     {
-      title: "累计收益",
-      value: formatCurrency(result.profit),
-      icon: isProfit ? TrendingUp : TrendingDown,
-      color: isProfit ? "text-profit" : "text-loss",
+      label: "累计收益",
+      value: result.profit,
+      format: (v: number) => `${v >= 0 ? "+" : ""}${formatCurrency(v)}`,
+      highlight: true,
+      isProfit: isProfit,
     },
     {
-      title: "收益率",
-      value: formatPercent(result.profitRate),
-      icon: BarChart3,
-      color: isProfit ? "text-profit" : "text-loss",
+      label: "收益率",
+      value: result.profitRate,
+      format: (v: number) => formatPercent(v),
+      highlight: true,
+      isProfit: isProfit,
     },
     {
-      title: "定投次数",
-      value: `${result.investCount}次`,
-      icon: Target,
-      color: "text-gray-700",
+      label: "定投次数",
+      value: result.investCount,
+      format: (v: number) => `${v}次`,
     },
     {
-      title: "平均成本",
-      value: formatNumber(result.averageCost, 4),
-      icon: DollarSign,
-      color: "text-gray-700",
+      label: "平均成本",
+      value: result.averageCost,
+      format: (v: number) => formatNumber(v, 4),
     },
     {
-      title: "最大回撤",
-      value: formatPercent(-result.maxDrawdown),
-      icon: AlertTriangle,
-      color: "text-warning",
+      label: "最大回撤",
+      value: -result.maxDrawdown,
+      format: (v: number) => formatPercent(v),
+      warning: true,
     },
   ];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {metrics.map((metric, index) => (
-        <Card key={index}>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <metric.icon className={`h-5 w-5 ${metric.color}`} />
-            </div>
-            <p className="text-sm text-muted-foreground mt-2">{metric.title}</p>
-            <p className={`text-2xl font-bold mt-1 ${metric.color}`}>
-              {metric.value}
-            </p>
-          </CardContent>
-        </Card>
+        <div
+          key={index}
+          className={cn(
+            "metric-card",
+            metric.highlight && (metric.isProfit ? "bg-profit/5" : "bg-loss/5"),
+            metric.warning && "bg-wealth/10"
+          )}
+        >
+          <p className="metric-label">{metric.label}</p>
+          <p
+            className={cn(
+              "metric-value mt-2",
+              metric.highlight &&
+                (metric.isProfit ? "text-profit" : "text-loss"),
+              metric.warning && "text-wealth"
+            )}
+          >
+            <AnimatedNumber
+              value={Math.abs(metric.value)}
+              formatFn={metric.format}
+              duration={500}
+            />
+          </p>
+        </div>
       ))}
     </div>
   );

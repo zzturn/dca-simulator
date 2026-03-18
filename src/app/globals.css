@@ -5,25 +5,54 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 210 11% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 210 11% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 211 100% 50%;
+    --popover-foreground: 210 11% 15%;
+    --primary: 217 98% 55%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 9% 46%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 9% 46%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 211 100% 50%;
-    --radius: 0.5rem;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 98% 55%;
+    --radius: 12px;
+
+    /* 自定义变量 */
+    --profit-color: #F53F3F;
+    --loss-color: #00B42A;
+    --wealth-color: #F2994A;
+    --app-bg: #F7F8FA;
+    --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 98% 55%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
   }
 }
 
@@ -31,7 +60,174 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-app-bg text-text-1;
+    font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 数字字体 */
+  .font-number {
+    font-family: "DIN Condensed", "PingFang SC", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* 卡片基础样式 */
+  .card-professional {
+    @apply bg-card-bg rounded-2xl shadow-card;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .card-professional:hover {
+    @apply shadow-card-hover;
+  }
+
+  /* 利润/亏损颜色 */
+  .text-profit {
+    color: var(--profit-color);
+  }
+
+  .text-loss {
+    color: var(--loss-color);
+  }
+
+  .bg-profit {
+    background-color: var(--profit-color);
+  }
+
+  .bg-loss {
+    background-color: var(--loss-color);
+  }
+
+  /* 大字报样式 */
+  .display-number {
+    @apply font-number text-display;
+    letter-spacing: -0.02em;
+  }
+
+  /* 分段选择器样式 */
+  .segmented-control {
+    @apply relative inline-flex p-1 bg-gray-100 rounded-lg;
+  }
+
+  .segmented-control-item {
+    @apply relative px-4 py-2 text-sm font-medium text-text-2 rounded-md transition-all duration-200 cursor-pointer;
+  }
+
+  .segmented-control-item.active {
+    @apply bg-white text-text-1 shadow-sm;
+  }
+
+  /* 日历矩阵 */
+  .calendar-matrix {
+    @apply grid grid-cols-7 gap-1;
+  }
+
+  .calendar-day {
+    @apply w-8 h-8 flex items-center justify-center text-sm rounded-md cursor-pointer transition-all duration-150;
+  }
+
+  .calendar-day:hover {
+    @apply bg-gray-100;
+  }
+
+  .calendar-day.selected {
+    @apply bg-primary text-white;
+  }
+
+  .calendar-day.disabled {
+    @apply text-text-4 cursor-not-allowed;
+  }
+
+  /* 步进器 */
+  .stepper {
+    @apply flex items-center gap-3;
+  }
+
+  .stepper-btn {
+    @apply w-10 h-10 flex items-center justify-center rounded-lg border border-border-default bg-white text-text-2 transition-all duration-150;
+  }
+
+  .stepper-btn:hover:not(:disabled) {
+    @apply border-primary text-primary;
+  }
+
+  .stepper-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* 快捷金额按钮 */
+  .quick-amount-btn {
+    @apply px-3 py-1.5 text-sm rounded-md border border-border-default bg-white text-text-2 transition-all duration-150;
+  }
+
+  .quick-amount-btn:hover {
+    @apply border-primary text-primary bg-primary-50;
+  }
+
+  /* 错误震动动画 */
+  .error-shake {
+    animation: shake 0.3s ease-in-out;
+  }
+
+  /* 热门标签 */
+  .hot-tag {
+    @apply px-3 py-1.5 text-sm rounded-full bg-gray-100 text-text-2 transition-all duration-200 cursor-pointer;
+  }
+
+  .hot-tag:hover {
+    @apply bg-primary-50 text-primary;
+  }
+
+  /* Hero搜索框 */
+  .hero-search {
+    @apply w-full px-6 py-4 text-lg bg-white rounded-2xl border-2 border-transparent shadow-card transition-all duration-200;
+  }
+
+  .hero-search:focus {
+    @apply border-primary shadow-card-hover outline-none;
+  }
+
+  .hero-search.error {
+    @apply border-profit error-shake;
+  }
+
+  /* 指标卡片 */
+  .metric-card {
+    @apply card-professional p-4;
+  }
+
+  .metric-value {
+    @apply text-2xl font-bold font-number;
+  }
+
+  .metric-label {
+    @apply text-sm text-text-3;
+  }
+}
+
+@layer utilities {
+  /* 隐藏滚动条但保持滚动功能 */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 文字截断 */
+  .text-truncate {
+    @apply overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+
+  /* 渐变文字 */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-primary-400 bg-clip-text text-transparent;
   }
 }

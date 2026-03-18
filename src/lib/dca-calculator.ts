@@ -94,7 +94,7 @@ function generateInvestDates(
   }
 
   // 去重并排序
-  return [...new Set(dates)].sort();
+  return Array.from(new Set(dates)).sort();
 }
 
 // 模拟定投（核心算法）

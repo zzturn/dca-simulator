@@ -9,9 +9,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { InvestmentRecord } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -20,7 +19,7 @@ interface AssetChartProps {
 }
 
 export function AssetChart({ records }: AssetChartProps) {
-  // 采样数据（超过500点时采样）
+  // 采样数据
   const sampledData = useMemo(() => {
     if (records.length <= 500) return records;
 
@@ -51,18 +50,19 @@ export function AssetChart({ records }: AssetChartProps) {
       const profit = current - cost;
 
       return (
-        <div className="bg-white border rounded-lg shadow-lg p-3">
-          <p className="text-sm font-medium mb-2">{label}</p>
-          <p className="text-sm text-gray-700">
+        <div className="bg-white border border-border-default rounded-xl shadow-popup p-3">
+          <p className="text-sm font-medium text-text-1 mb-2">{label}</p>
+          <p className="text-sm text-text-2">
             累计投入: {formatCurrency(cost)}
           </p>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-text-2">
             当前市值: {formatCurrency(current)}
           </p>
           <p
-            className={`text-sm font-medium ${
+            className={cn(
+              "text-sm font-medium mt-1",
               profit >= 0 ? "text-profit" : "text-loss"
-            }`}
+            )}
           >
             收益: {formatCurrency(profit)}
           </p>
@@ -72,84 +72,89 @@ export function AssetChart({ records }: AssetChartProps) {
     return null;
   };
 
-  // 计算盈亏区域填充
+  // 判断整体盈亏
   const isOverallProfit = records.length > 0 && records[records.length - 1].profit >= 0;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">资产曲线</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={sampledData}
-              margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
-            >
-              <defs>
-                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor={isOverallProfit ? "#D84A4A" : "#3BA272"}
-                    stopOpacity={0.3}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor={isOverallProfit ? "#D84A4A" : "#3BA272"}
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis
-                dataKey="date"
-                tickFormatter={formatXAxis}
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis
-                tick={{ fontSize: 12 }}
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              {/* 成本线 */}
-              <Area
-                type="monotone"
-                dataKey="totalCost"
-                stroke="#8884d8"
-                strokeDasharray="5 5"
-                fill="transparent"
-                name="累计投入"
-              />
-              {/* 市值曲线 */}
-              <Area
-                type="monotone"
-                dataKey="currentValue"
-                stroke={isOverallProfit ? "#D84A4A" : "#3BA272"}
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#colorValue)"
-                name="当前市值"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-0.5 bg-gray-400" style={{ borderStyle: "dashed" }} />
-            <span>累计投入</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-0.5"
-              style={{
-                backgroundColor: isOverallProfit ? "#D84A4A" : "#3BA272",
-              }}
+    <div className="card-professional p-6">
+      <h3 className="text-lg font-semibold text-text-1 mb-6">资产曲线</h3>
+
+      <div className="h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart
+            data={sampledData}
+            margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
+          >
+            <defs>
+              <linearGradient id="assetGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset="5%"
+                  stopColor={isOverallProfit ? "#F53F3F" : "#00B42A"}
+                  stopOpacity={0.2}
+                />
+                <stop
+                  offset="95%"
+                  stopColor={isOverallProfit ? "#F53F3F" : "#00B42A"}
+                  stopOpacity={0}
+                />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#E5E6EB" />
+            <XAxis
+              dataKey="date"
+              tickFormatter={formatXAxis}
+              tick={{ fontSize: 12, fill: "#86909C" }}
+              axisLine={{ stroke: "#E5E6EB" }}
             />
-            <span>当前市值</span>
-          </div>
+            <YAxis
+              tick={{ fontSize: 12, fill: "#86909C" }}
+              tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+              axisLine={{ stroke: "#E5E6EB" }}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            {/* 成本线 */}
+            <Area
+              type="monotone"
+              dataKey="totalCost"
+              stroke="#86909C"
+              strokeDasharray="5 5"
+              fill="transparent"
+              name="累计投入"
+              strokeWidth={1.5}
+            />
+            {/* 市值曲线 */}
+            <Area
+              type="monotone"
+              dataKey="currentValue"
+              stroke={isOverallProfit ? "#F53F3F" : "#00B42A"}
+              strokeWidth={2}
+              fillOpacity={1}
+              fill="url(#assetGradient)"
+              name="当前市值"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* 图例 */}
+      <div className="mt-4 flex items-center gap-6 text-sm text-text-3">
+        <div className="flex items-center gap-2">
+          <div
+            className="w-8 h-0.5 bg-text-3"
+            style={{ borderStyle: "dashed" }}
+          />
+          <span>累计投入</span>
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex items-center gap-2">
+          <div
+            className="w-8 h-0.5 rounded"
+            style={{
+              backgroundColor: isOverallProfit ? "#F53F3F" : "#00B42A",
+            }}
+          />
+          <span>当前市值</span>
+        </div>
+      </div>
+    </div>
   );
 }
