@@ -38,7 +38,7 @@ export function FundInfoCard({ fund }: FundInfoCardProps) {
           <p className="text-2xl font-bold font-number text-text-1">
             {fund.nav?.toFixed(4) || "-"}
           </p>
-          <p className="text-xs text-text-4 mt-1">{fund.establishDate}</p>
+          <p className="text-xs text-text-4 mt-1">{fund.navDate || fund.establishDate}</p>
         </div>
 
         {/* 累计净值 */}
@@ -47,7 +47,7 @@ export function FundInfoCard({ fund }: FundInfoCardProps) {
           <p className="text-2xl font-bold font-number text-text-1">
             {fund.accumulatedNav?.toFixed(4) || "-"}
           </p>
-          <p className="text-xs text-text-4 mt-1">{fund.establishDate}</p>
+          <p className="text-xs text-text-4 mt-1">{fund.navDate || fund.establishDate}</p>
         </div>
 
         {/* 日涨跌幅 */}

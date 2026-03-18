@@ -1,9 +1,10 @@
 import type { Fund, NavPoint } from "./types";
 import { FundCache, HOT_FUNDS } from "./fund-cache";
 
-// 天天基金公开API
+// API 地址
 const FUND_INFO_URL = "http://fundgz.1234567.com.cn/js";
 const FUND_NAV_URL = "http://api.fund.eastmoney.com/f10/lsjz";
+const FUND_DETAIL_API = "https://tiantian-fund-api-phi.vercel.app/api/action";
 
 // API客户端（服务端使用）
 class FundApiClient {
@@ -15,7 +16,78 @@ class FundApiClient {
       return cached;
     }
 
-    // 使用天天基金的jsonp接口
+    // 并行获取基本信息、详情和最新净值（用于累计净值）
+    const [basicInfo, detailInfo, latestNav] = await Promise.allSettled([
+      this.fetchBasicInfo(code),
+      this.fetchFundDetail(code),
+      this.fetchLatestNav(code),
+    ]);
+
+    // 合并信息
+    const basic = basicInfo.status === "fulfilled" ? basicInfo.value : null;
+    const detail = detailInfo.status === "fulfilled" ? detailInfo.value : null;
+    const navData = latestNav.status === "fulfilled" ? latestNav.value : null;
+
+    if (!basic && !detail) {
+      throw new Error("获取基金信息失败");
+    }
+
+    const fundInfo: Fund = {
+      code: basic?.code || code,
+      name: detail?.name || basic?.name || "",
+      type: detail?.type || basic?.type || "混合型",
+      manager: detail?.manager || basic?.manager || "",
+      company: detail?.company || basic?.company || "",
+      establishDate: detail?.establishDate || basic?.establishDate || "",
+      navDate: navData?.date || "",
+      nav: basic?.nav || navData?.nav || 0,
+      accumulatedNav: navData?.accumulatedNav || basic?.accumulatedNav || 0,
+      dayGrowth: navData?.dayGrowth || basic?.dayGrowth, // 优先使用净值历史中的日涨跌幅
+    };
+
+    // 保存到缓存
+    FundCache.setFundInfo(code, fundInfo);
+
+    return fundInfo;
+  }
+
+  // 获取最新净值记录（用于获取累计净值、净值日期和日涨跌幅）
+  private async fetchLatestNav(code: string): Promise<{ nav: number; accumulatedNav: number; date: string; dayGrowth: string } | null> {
+    try {
+      const url = `${FUND_NAV_URL}?fundCode=${code}&pageIndex=1&pageSize=1`;
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Referer": "http://fund.eastmoney.com/",
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      const list = data.Data?.LSJZList;
+
+      if (!list || list.length === 0) {
+        return null;
+      }
+
+      const latest = list[0];
+      return {
+        nav: parseFloat(latest.DWJZ) || 0,
+        accumulatedNav: parseFloat(latest.LJJZ) || 0,
+        date: latest.FSRQ?.split(" ")[0] || "",
+        dayGrowth: latest.JZZZL || "", // 日涨跌幅
+      };
+    } catch (err) {
+      console.error(`[FundAPI] 获取最新净值失败: ${code}`, err);
+      return null;
+    }
+  }
+
+  // 获取基本信息（来自 fundgz API）
+  private async fetchBasicInfo(code: string): Promise<Partial<Fund>> {
     const url = `${FUND_INFO_URL}/${code}.js?rt=${Date.now()}`;
     const response = await fetch(url, {
       headers: {
@@ -37,22 +109,62 @@ class FundApiClient {
 
     const data = JSON.parse(jsonMatch[1]);
 
-    const fundInfo: Fund = {
+    return {
       code: data.fundcode,
       name: data.name,
-      type: data.fundtype || "混合型",
-      manager: data.fundmanager,
-      company: data.fundcompany,
-      establishDate: data.establishdate || "",
       nav: parseFloat(data.dwjz) || 0,
-      accumulatedNav: parseFloat(data.ljjz) || 0,
-      dayGrowth: data.jzrq ? data.gszzl : undefined,
+      dayGrowth: data.gszzl,
     };
+  }
 
-    // 保存到缓存
-    FundCache.setFundInfo(code, fundInfo);
+  // 获取基金详情（使用 tiantian-fund-api）
+  private async fetchFundDetail(code: string): Promise<Partial<Fund>> {
+    try {
+      const url = `${FUND_DETAIL_API}?action_name=fundMNDetailInformation&FCODE=${code}`;
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+      });
 
-    return fundInfo;
+      if (!response.ok) {
+        console.error(`[FundAPI] 获取详情失败: ${code}, status: ${response.status}`);
+        return {};
+      }
+
+      const json = await response.json();
+
+      if (!json.Datas) {
+        console.error(`[FundAPI] 详情无数据: ${code}`);
+        return {};
+      }
+
+      const data = json.Datas;
+
+      // 简化基金类型显示
+      let fundType = data.FTYPE || "混合型";
+      if (fundType.includes("指数型")) fundType = "指数型";
+      else if (fundType.includes("股票型")) fundType = "股票型";
+      else if (fundType.includes("债券型")) fundType = "债券型";
+      else if (fundType.includes("混合型")) fundType = "混合型";
+      else if (fundType.includes("货币型")) fundType = "货币型";
+      else if (fundType.includes("QDII")) fundType = "QDII";
+
+      const result: Partial<Fund> = {
+        name: data.SHORTNAME,
+        type: fundType,
+        manager: data.JJJL,
+        company: data.JJGS,
+        establishDate: data.ESTABDATE,
+      };
+
+      console.log(`[FundAPI] 详情获取成功: ${code}`, result);
+
+      return result;
+    } catch (err) {
+      console.error(`[FundAPI] 获取详情失败: ${code}`, err);
+      return {};
+    }
   }
 
   // 获取历史净值（支持缓存和增量更新）

@@ -71,7 +71,7 @@ export function NavChart({
   onTimeRangeChange,
   isLoading,
 }: NavChartProps) {
-  const [showAccumulated, setShowAccumulated] = useState(true);
+  const [showAccumulated, setShowAccumulated] = useState(false);
 
   // 过滤时间范围
   const filteredData = useMemo(() => {

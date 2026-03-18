@@ -6,6 +6,7 @@ export interface Fund {
   manager: string;
   company: string;
   establishDate: string;
+  navDate?: string; // 净值日期
   nav?: number; // 最新单位净值
   accumulatedNav?: number; // 最新累计净值
   dayGrowth?: string; // 日涨跌幅
