@@ -76,12 +76,7 @@ export function MetricsCards({ result }: MetricsCardsProps) {
               metric.warning && "text-wealth"
             )}
           >
-            <AnimatedNumber
-              value={Math.abs(metric.value)}
-              formatFn={metric.format}
-              duration={500}
-              integer={metric.integer}
-            />
+            {metric.format(metric.value)}
           </p>
         </div>
       ))}
