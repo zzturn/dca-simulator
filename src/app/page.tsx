@@ -16,8 +16,8 @@ import { simulateDCA } from "@/lib/dca-calculator";
 import { formatDate } from "@/lib/date-utils";
 
 export default function Home() {
-  // 状态管理
-  const [fundCode, setFundCode] = useState("");
+  // 状态管理 - 默认选择 110020
+  const [fundCode, setFundCode] = useState("110020");
   const [fundInfo, setFundInfo] = useState<Fund | null>(null);
   const [navHistory, setNavHistory] = useState<NavPoint[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -36,6 +36,11 @@ export default function Home() {
     endDate: formatDate(new Date()),
     nonTradeDayRule: "next",
   });
+
+  // 页面加载时自动搜索默认基金
+  useEffect(() => {
+    handleSearch("110020");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 搜索基金
   const handleSearch = useCallback(async (code: string) => {
@@ -206,49 +211,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* 使用说明 - 无基金时显示 */}
-        {!fundInfo && !searchLoading && (
-          <div className="card-professional p-8 mt-8 animate-fade-in">
-            <h2 className="text-xl font-semibold text-text-1 mb-6">
-              使用说明
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white font-bold">
-                  1
-                </div>
-                <div>
-                  <h3 className="font-medium text-text-1 mb-2">搜索基金</h3>
-                  <p className="text-sm text-text-3">
-                    输入6位基金代码，如 010736，获取基金信息和历史净值数据
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white font-bold">
-                  2
-                </div>
-                <div>
-                  <h3 className="font-medium text-text-1 mb-2">配置策略</h3>
-                  <p className="text-sm text-text-3">
-                    设置定投频率、金额、起止日期和非交易日处理规则
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white font-bold">
-                  3
-                </div>
-                <div>
-                  <h3 className="font-medium text-text-1 mb-2">查看结果</h3>
-                  <p className="text-sm text-text-3">
-                    实时查看模拟收益、收益率、最大回撤等指标和资产曲线
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

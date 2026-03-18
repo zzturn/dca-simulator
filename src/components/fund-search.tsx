@@ -32,10 +32,9 @@ export function FundSearch({ onSearch, isLoading }: FundSearchProps) {
   };
 
   const popularFunds = [
-    { code: "010736", name: "招商中证白酒" },
-    { code: "000961", name: "天弘沪深300" },
     { code: "110020", name: "易方达沪深300" },
-    { code: "161725", name: "招商中证白酒LOF" },
+    { code: "160119", name: "南方中证500" },
+    { code: "270042", name: "广发纳斯达克100" },
   ];
 
   return (
