@@ -41,6 +41,7 @@ export function MetricsCards({ result }: MetricsCardsProps) {
       label: "定投次数",
       value: result.investCount,
       format: (v: number) => `${v}次`,
+      integer: true,
     },
     {
       label: "平均成本",
@@ -79,6 +80,7 @@ export function MetricsCards({ result }: MetricsCardsProps) {
               value={Math.abs(metric.value)}
               formatFn={metric.format}
               duration={500}
+              integer={metric.integer}
             />
           </p>
         </div>

@@ -11,6 +11,8 @@ interface AnimatedNumberProps {
   suffix?: string;
   className?: string;
   formatFn?: (value: number) => string;
+  /** 是否为整数，动画过程中不会显示小数 */
+  integer?: boolean;
 }
 
 export function AnimatedNumber({
@@ -21,6 +23,7 @@ export function AnimatedNumber({
   suffix = "",
   className,
   formatFn,
+  integer = false,
 }: AnimatedNumberProps) {
   const [displayValue, setDisplayValue] = useState(value);
   const previousValue = useRef(value);
@@ -72,10 +75,16 @@ export function AnimatedNumber({
   }, [value, duration]);
 
   const formatValue = (val: number): string => {
+    // 如果是整数模式，先四舍五入
+    const valueToFormat = integer ? Math.round(val) : val;
+
     if (formatFn) {
-      return formatFn(val);
+      return formatFn(valueToFormat);
     }
-    return val.toFixed(decimals);
+    if (integer) {
+      return valueToFormat.toString();
+    }
+    return valueToFormat.toFixed(decimals);
   };
 
   return (
