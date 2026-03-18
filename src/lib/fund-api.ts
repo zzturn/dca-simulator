@@ -4,7 +4,22 @@ import { FundCache, HOT_FUNDS } from "./fund-cache";
 // API 地址
 const FUND_INFO_URL = "http://fundgz.1234567.com.cn/js";
 const FUND_NAV_URL = "http://api.fund.eastmoney.com/f10/lsjz";
+const FUND_NAV_MOBILE_URL = "https://fundmobapi.eastmoney.com/FundMNewApi/FundMNHisNetList";
 const FUND_DETAIL_API = "https://tiantian-fund-api-phi.vercel.app/api/action";
+
+// 移动端 API 请求参数
+const MOBILE_API_PARAMS = {
+  product: "EFund",
+  deviceid: "874C427C-7C24-4980-A835-66FD40B67605",
+  MobileKey: "874C427C-7C24-4980-A835-66FD40B67605",
+  plat: "Iphone",
+  PhoneType: "IOS15.1.0",
+  OSVersion: "15.5",
+  version: "6.5.5",
+  ServerVersion: "6.5.5",
+  Version: "6.5.5",
+  appVersion: "6.5.5",
+};
 
 // 带重试的 fetch
 async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3): Promise<Response> {
@@ -311,50 +326,42 @@ class FundApiClient {
     return navPoints;
   }
 
-  // 获取全量净值历史
+  // 获取全量净值历史（使用移动端 API，一次请求获取所有数据）
   private async fetchAllNavHistory(
     code: string,
     startDate?: string,
     endDate?: string
   ): Promise<NavPoint[]> {
-    // 首先获取第一页以确定总条数和实际每页条数
-    const firstPage = await this.fetchNavPage(code, 1, 100);
-    const totalCount = firstPage.totalCount;
-    const actualPageSize = firstPage.data.length || 20;
+    console.log(`[FundAPI] 使用移动端API获取净值历史: ${code}`);
 
-    if (totalCount === 0) {
-      return [];
+    const bodyParams = new URLSearchParams({
+      FCODE: code,
+      pageIndex: "1",
+      pagesize: "5000", // 一次获取所有数据
+      ...MOBILE_API_PARAMS,
+    });
+
+    const response = await fetchWithRetry(FUND_NAV_MOBILE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "validmark": "aKVEnBbJF9Nip2Wjf4de/fSvA8W3X3iB4L6vT0Y5cxvZbEfEm17udZKUD2qy37dLRY3bzzHLDv+up/Yn3OTo5Q==",
+      },
+      body: bodyParams.toString(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`获取净值数据失败: ${response.status}`);
     }
 
-    // 计算需要的页数
-    const totalPages = Math.ceil(totalCount / actualPageSize);
+    const data = await response.json();
+    const records: NavRecordMobile[] = data.Datas || [];
 
-    console.log(`[FundAPI] 总记录数: ${totalCount}, 实际每页: ${actualPageSize}, 总页数: ${totalPages}`);
-
-    // 分批并发获取所有页面
-    const batchSize = 10;
-    let allData: NavRecord[] = [];
-
-    for (let batch = 0; batch < Math.ceil(totalPages / batchSize); batch++) {
-      const startPage = batch * batchSize + 1;
-      const endPage = Math.min((batch + 1) * batchSize, totalPages);
-
-      const pagePromises: Promise<{ totalCount: number; data: NavRecord[] }>[] = [];
-      for (let i = startPage; i <= endPage; i++) {
-        pagePromises.push(this.fetchNavPage(code, i, 100));
-      }
-
-      const pages = await Promise.all(pagePromises);
-      for (const page of pages) {
-        allData = allData.concat(page.data);
-      }
-
-      console.log(`[FundAPI] 已获取第 ${startPage}-${endPage} 页，累计 ${allData.length} 条`);
-    }
+    console.log(`[FundAPI] 移动端API返回 ${records.length} 条记录 (TotalCount: ${data.TotalCount})`);
 
     // 转换为NavPoint格式
-    let navPoints: NavPoint[] = allData.map((item) => ({
-      date: item.FSRQ.split(" ")[0],
+    let navPoints: NavPoint[] = records.map((item) => ({
+      date: item.FSRQ,
       nav: parseFloat(item.DWJZ) || 0,
       accumulatedNav: parseFloat(item.LJJZ) || 0,
       dayGrowth: item.JZZZL || "",
@@ -409,6 +416,18 @@ interface NavRecord {
   DWJZ: string; // 单位净值
   LJJZ: string; // 累计净值
   JZZZL: string; // 日涨跌幅
+}
+
+// 移动端API净值记录类型
+interface NavRecordMobile {
+  FSRQ: string; // 日期 (YYYY-MM-DD)
+  DWJZ: string; // 单位净值
+  LJJZ: string; // 累计净值
+  JZZZL: string; // 日涨跌幅
+  NAVTYPE: string;
+  RATE: string;
+  MUI: string;
+  SYI: string;
 }
 
 // 导出单例

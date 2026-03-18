@@ -20,7 +20,7 @@ export default function Home() {
   const [fundCode, setFundCode] = useState("110020");
   const [fundInfo, setFundInfo] = useState<Fund | null>(null);
   const [navHistory, setNavHistory] = useState<NavPoint[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(true); // 初始为 true，显示加载状态
   const [simulateLoading, setSimulateLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SimulationResult | null>(null);
@@ -155,11 +155,104 @@ export default function Home() {
 
         {/* 加载骨架屏 */}
         {searchLoading && (
-          <div className="space-y-6">
-            <Skeleton className="h-[180px] w-full rounded-2xl" />
+          <div className="space-y-6 animate-fade-in">
+            {/* 基金名片骨架屏 */}
+            <div className="card-professional p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-12 h-12 rounded-xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                </div>
+                <div className="flex gap-6">
+                  <div className="text-center">
+                    <Skeleton className="h-4 w-16 mb-1" />
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                  <div className="text-center">
+                    <Skeleton className="h-4 w-16 mb-1" />
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                  <div className="text-center">
+                    <Skeleton className="h-4 w-16 mb-1" />
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 净值走势图骨架屏 */}
+            <div className="card-professional p-6">
+              <div className="flex items-center justify-between mb-6">
+                <Skeleton className="h-6 w-24" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-12 rounded-lg" />
+                  <Skeleton className="h-8 w-12 rounded-lg" />
+                  <Skeleton className="h-8 w-12 rounded-lg" />
+                  <Skeleton className="h-8 w-12 rounded-lg" />
+                  <Skeleton className="h-8 w-12 rounded-lg" />
+                </div>
+              </div>
+              <Skeleton className="h-[350px] w-full" />
+              <div className="mt-4 flex gap-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+
+            {/* 策略配置 + 结果骨架屏 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Skeleton className="h-[500px] rounded-2xl" />
-              <Skeleton className="h-[500px] lg:col-span-2 rounded-2xl" />
+              {/* 左侧配置面板骨架屏 */}
+              <div className="card-professional p-6 space-y-6">
+                <Skeleton className="h-6 w-24" />
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Skeleton className="h-10 rounded-lg" />
+                    <Skeleton className="h-10 rounded-lg" />
+                  </div>
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Skeleton className="h-10 rounded-lg" />
+                    <Skeleton className="h-10 rounded-lg" />
+                  </div>
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <Skeleton className="h-12 w-full rounded-xl" />
+                </div>
+              </div>
+
+              {/* 右侧结果骨架屏 */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* 收益大字报骨架屏 */}
+                <div className="card-professional p-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="text-center">
+                        <Skeleton className="h-4 w-16 mx-auto mb-2" />
+                        <Skeleton className="h-8 w-24 mx-auto" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 核心指标骨架屏 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="card-professional p-4">
+                      <Skeleton className="h-4 w-20 mb-2" />
+                      <Skeleton className="h-6 w-16" />
+                    </div>
+                  ))}
+                </div>
+
+                {/* 资产曲线骨架屏 */}
+                <div className="card-professional p-6">
+                  <Skeleton className="h-6 w-24 mb-4" />
+                  <Skeleton className="h-[300px] w-full" />
+                </div>
+              </div>
             </div>
           </div>
         )}
