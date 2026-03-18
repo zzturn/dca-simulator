@@ -99,9 +99,11 @@ export default function Home() {
         const simResult = simulateDCA(config, navHistory);
         if (simResult) {
           setResult(simResult);
+          setError(null); // 模拟成功，清除错误提示
         }
       } catch (err) {
         console.error("模拟计算失败:", err);
+        setError(err instanceof Error ? err.message : "模拟计算失败");
       }
     }, 300);
 
@@ -146,13 +148,6 @@ export default function Home() {
 
       {/* 主内容区 */}
       <main className="container mx-auto px-4 pb-8 max-w-7xl">
-        {/* 错误提示 */}
-        {error && (
-          <div className="mb-6 p-4 rounded-xl bg-profit/10 border border-profit/20 animate-fade-in">
-            <p className="text-profit font-medium">{error}</p>
-          </div>
-        )}
-
         {/* 加载骨架屏 */}
         {searchLoading && (
           <div className="space-y-6 animate-fade-in">
@@ -286,6 +281,7 @@ export default function Home() {
                   isLoading={simulateLoading}
                   minDate={minDate}
                   maxDate={maxDate}
+                  error={error}
                 />
               </div>
 

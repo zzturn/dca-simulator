@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, Info } from "lucide-react";
+import { Play, Info, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SegmentedControl } from "./ui/segmented-control";
 import { Stepper } from "./ui/stepper";
@@ -21,6 +21,7 @@ interface StrategyConfigProps {
   isLoading?: boolean;
   minDate?: string;
   maxDate?: string;
+  error?: string | null;
 }
 
 export function StrategyConfig({
@@ -30,6 +31,7 @@ export function StrategyConfig({
   isLoading,
   minDate,
   maxDate,
+  error,
 }: StrategyConfigProps) {
   const updateConfig = (updates: Partial<DCAConfig>) => {
     onConfigChange({ ...config, ...updates });
@@ -215,6 +217,19 @@ export function StrategyConfig({
           </label>
         </div>
       </div>
+
+      {/* 错误提示 */}
+      {error && (
+        <div className="p-4 rounded-xl bg-profit/10 border border-profit/20 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-profit flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-profit font-medium">模拟计算失败</p>
+              <p className="text-sm text-profit/80 mt-1">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 开始模拟按钮 */}
       <Button
