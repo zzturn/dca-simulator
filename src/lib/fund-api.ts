@@ -6,6 +6,29 @@ const FUND_INFO_URL = "http://fundgz.1234567.com.cn/js";
 const FUND_NAV_URL = "http://api.fund.eastmoney.com/f10/lsjz";
 const FUND_DETAIL_API = "https://tiantian-fund-api-phi.vercel.app/api/action";
 
+// 带重试的 fetch
+async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000); // 15秒超时
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    return response;
+  } catch (err) {
+    clearTimeout(timeout);
+    if (retries > 0 && (err instanceof Error && (err.name === "AbortError" || err.message.includes("closed")))) {
+      console.log(`[FundAPI] 重试 ${retries}: ${url}`);
+      await new Promise((r) => setTimeout(r, 1000)); // 等待1秒
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    throw err;
+  }
+}
+
 // API客户端（服务端使用）
 class FundApiClient {
   // 获取基金信息
@@ -55,7 +78,7 @@ class FundApiClient {
   private async fetchLatestNav(code: string): Promise<{ nav: number; accumulatedNav: number; date: string; dayGrowth: string } | null> {
     try {
       const url = `${FUND_NAV_URL}?fundCode=${code}&pageIndex=1&pageSize=1`;
-      const response = await fetch(url, {
+      const response = await fetchWithRetry(url, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
           "Referer": "http://fund.eastmoney.com/",
@@ -89,7 +112,7 @@ class FundApiClient {
   // 获取基本信息（来自 fundgz API）
   private async fetchBasicInfo(code: string): Promise<Partial<Fund>> {
     const url = `${FUND_INFO_URL}/${code}.js?rt=${Date.now()}`;
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
@@ -121,7 +144,7 @@ class FundApiClient {
   private async fetchFundDetail(code: string): Promise<Partial<Fund>> {
     try {
       const url = `${FUND_DETAIL_API}?action_name=fundMNDetailInformation&FCODE=${code}`;
-      const response = await fetch(url, {
+      const response = await fetchWithRetry(url, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
@@ -361,7 +384,7 @@ class FundApiClient {
   ): Promise<{ totalCount: number; data: NavRecord[] }> {
     const url = `${FUND_NAV_URL}?fundCode=${code}&pageIndex=${pageIndex}&pageSize=${pageSize}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Referer": "http://fund.eastmoney.com/",

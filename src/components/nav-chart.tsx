@@ -32,36 +32,29 @@ const timeRangeOptions: { value: TimeRange; label: string }[] = [
   { value: "6m", label: "6月" },
 ];
 
-// 自定义Dot组件 - 显示投资点
-interface CustomDotProps {
-  cx?: number;
-  cy?: number;
-  payload?: {
-    date: string;
-    nav: number;
-    accumulatedNav: number;
-    investAmount?: number;
-    investShares?: number;
-    isInvestPoint?: boolean;
+// 创建自定义 Dot 渲染函数
+function createCustomDot(investDates: Set<string>) {
+  return function CustomDot({ cx, cy, payload }: { cx?: number; cy?: number; payload?: { date: string } }) {
+    if (!payload || cx === undefined || cy === undefined) {
+      return null;
+    }
+
+    if (!investDates.has(payload.date)) {
+      return null;
+    }
+
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={3}
+        fill="#F53F3F"
+        stroke="#fff"
+        strokeWidth={1}
+        style={{ cursor: "pointer" }}
+      />
+    );
   };
-}
-
-function CustomDot({ cx, cy, payload }: CustomDotProps) {
-  if (!payload?.isInvestPoint || cx === undefined || cy === undefined) {
-    return null;
-  }
-
-  return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={3}
-      fill="#F53F3F"
-      stroke="#fff"
-      strokeWidth={1}
-      style={{ cursor: "pointer" }}
-    />
-  );
 }
 
 export function NavChart({
@@ -80,59 +73,63 @@ export function NavChart({
     return navHistory.filter((p) => p.date >= startDate);
   }, [navHistory, timeRange]);
 
-  // 创建投资日期到投资记录的映射（只包含实际投资日，amount > 0）
-  const investMap = useMemo(() => {
-    const map = new Map<string, InvestmentRecord>();
-    if (investRecords) {
-      investRecords.forEach((r) => {
-        // 只记录实际投资的日期（金额 > 0）
-        if (r.amount > 0) {
-          map.set(r.date, r);
-        }
-      });
-    }
+  // 投资点数据（用于 Tooltip）
+  const investPointsMap = useMemo(() => {
+    const map = new Map<string, { amount: number; shares: number }>();
+    investRecords?.forEach((r) => {
+      if (r.amount > 0) {
+        map.set(r.date, { amount: r.amount, shares: r.shares });
+      }
+    });
     return map;
   }, [investRecords]);
 
-  // 采样数据（确保包含首尾和所有投资日期）
+  // 投资日期集合（用于图表数据）
+  const investDates = useMemo(() => {
+    return new Set(investRecords?.filter(r => r.amount > 0).map(r => r.date) || []);
+  }, [investRecords]);
+
+  // 图表数据 - 采样 + 投资日期
+  // 采样只依赖 filteredData（稳定），投资日期在采样后添加（不影响曲线形状）
   const chartData = useMemo(() => {
-    // 为每个数据点添加投资信息
-    const enrichData = (data: NavPoint[]) =>
-      data.map((p) => {
-        const investRecord = investMap.get(p.date);
-        return {
-          ...p,
-          investAmount: investRecord?.amount,
-          investShares: investRecord?.shares,
-          isInvestPoint: !!investRecord,
-        };
-      });
+    if (filteredData.length === 0) return [];
 
+    // 第一步：从 filteredData 进行均匀采样（这部分是稳定的）
+    let sampled: NavPoint[];
     if (filteredData.length <= 1000) {
-      return enrichData(filteredData);
+      sampled = [...filteredData];
+    } else {
+      const sampleRate = Math.ceil(filteredData.length / 1000);
+      sampled = [];
+      for (let i = 0; i < filteredData.length; i += sampleRate) {
+        sampled.push(filteredData[i]);
+      }
+      const lastPoint = filteredData[filteredData.length - 1];
+      if (sampled[sampled.length - 1]?.date !== lastPoint.date) {
+        sampled.push(lastPoint);
+      }
     }
 
-    const sampleRate = Math.ceil(filteredData.length / 1000);
-    const sampled: NavPoint[] = [];
-    for (let i = 0; i < filteredData.length; i += sampleRate) {
-      sampled.push(filteredData[i]);
-    }
-    const lastPoint = filteredData[filteredData.length - 1];
-    if (sampled[sampled.length - 1]?.date !== lastPoint.date) {
-      sampled.push(lastPoint);
-    }
+    // 第二步：创建已采样日期的集合
+    const sampledDates = new Set(sampled.map(p => p.date));
 
-    // 确保投资日期都在采样数据中
-    const sampledDateSet = new Set(sampled.map((p) => p.date));
-    const missingPoints = filteredData.filter(
-      (p) => investMap.has(p.date) && !sampledDateSet.has(p.date)
-    );
+    // 第三步：添加投资日期（从 filteredData 获取对应的 NAV 点）
+    // 这些点在曲线上已经存在，添加它们只是为了确保红点能显示
+    const filteredDataMap = new Map(filteredData.map(p => [p.date, p]));
+    Array.from(investDates).forEach((date) => {
+      if (!sampledDates.has(date)) {
+        const navPoint = filteredDataMap.get(date);
+        if (navPoint) {
+          sampled.push(navPoint);
+        }
+      }
+    });
 
-    const combined = [...sampled, ...missingPoints];
-    combined.sort((a, b) => a.date.localeCompare(b.date));
+    // 按日期排序
+    sampled.sort((a, b) => a.date.localeCompare(b.date));
 
-    return enrichData(combined);
-  }, [filteredData, investMap]);
+    return sampled;
+  }, [filteredData, investDates]);
 
   // 格式化X轴日期
   const formatXAxis = (date: string) => {
@@ -151,51 +148,58 @@ export function NavChart({
     payload?: Array<{
       value: number;
       dataKey: string;
-      color: string;
       payload?: {
         date: string;
         nav: number;
-        accumulatedNav: number;
-        investAmount?: number;
-        investShares?: number;
-        isInvestPoint?: boolean;
+        accumulatedNav?: number;
+        amount?: number;
+        shares?: number;
       };
     }>;
     label?: string;
   }) => {
     if (!active || !payload || payload.length === 0) return null;
 
-    const firstPayload = payload[0]?.payload;
-    const isInvestPoint = firstPayload?.isInvestPoint && firstPayload?.investAmount != null;
+    // 合并所有 payload 数据
+    const allPayloads = payload.map((p) => p.payload).filter(Boolean);
+    const firstPayload = allPayloads[0];
 
-    const navEntry = payload.find((p) => p.dataKey === "nav");
-    const accumulatedEntry = payload.find((p) => p.dataKey === "accumulatedNav");
+    // 检查是否是投资点（来自散点或面积图）
+    const investRecord = firstPayload?.amount
+      ? { amount: firstPayload.amount, shares: firstPayload.shares! }
+      : firstPayload?.date
+      ? investPointsMap.get(firstPayload.date)
+      : null;
+    const isInvestPoint = !!investRecord;
+
+    const navValue = firstPayload?.nav ?? payload.find((p) => p.dataKey === "nav")?.value;
+    const accumulatedValue = firstPayload?.accumulatedNav ?? payload.find((p) => p.dataKey === "accumulatedNav")?.value;
 
     return (
       <div className="bg-white border border-border-default rounded-xl p-3 shadow-lg">
         <p className="text-sm font-medium text-text-1 mb-2">{label}</p>
 
         {/* 净值信息 */}
-        {navEntry && (
+        {navValue !== undefined && (
           <p className="text-sm" style={{ color: "#1A5CFE" }}>
-            单位净值: {navEntry.value.toFixed(4)}
+            单位净值: {navValue.toFixed(4)}
           </p>
         )}
-        {accumulatedEntry && showAccumulated && (
+        {accumulatedValue !== undefined && showAccumulated && (
           <p className="text-sm" style={{ color: "#FA8C16" }}>
-            累计净值: {accumulatedEntry.value.toFixed(4)}
+            累计净值: {accumulatedValue.toFixed(4)}
           </p>
         )}
 
         {/* 投资信息（如果是投资点） */}
-        {isInvestPoint && (
+        {isInvestPoint && investRecord && (
           <div className="mt-2 pt-2 border-t border-border-default">
             <p className="text-xs text-text-3 mb-1">定投买入</p>
             <p className="text-sm text-profit font-medium">
-              金额: {formatCurrency(firstPayload.investAmount as number)}
+              金额: {formatCurrency(investRecord.amount)}
             </p>
             <p className="text-sm text-text-2">
-              份额: {formatNumber(firstPayload.investShares as number, 2)}
+              份额: {formatNumber(investRecord.shares, 2)}
             </p>
           </div>
         )}
@@ -279,14 +283,14 @@ export function NavChart({
               fillOpacity={1}
             />
 
-            {/* 单位净值线 - 只在投资点显示dot */}
+            {/* 单位净值线 - 带投资点标记 */}
             <Area
               type="monotone"
               dataKey="nav"
               stroke="#1A5CFE"
               strokeWidth={2}
               fill="none"
-              dot={<CustomDot />}
+              dot={createCustomDot(investDates)}
             />
 
             {/* 累计净值渐变填充区域 */}

@@ -80,7 +80,14 @@ export function AssetChart({ records }: AssetChartProps) {
     label,
   }: {
     active?: boolean;
-    payload?: Array<{ value: number; dataKey: string }>;
+    payload?: Array<{
+      value: number;
+      dataKey: string;
+      payload?: {
+        currentValue: number;
+        totalCost: number;
+      };
+    }>;
     label?: string;
   }) => {
     if (active && payload && payload.length) {
