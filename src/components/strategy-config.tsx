@@ -1,11 +1,10 @@
 "use client";
 
-import { Play, Info, AlertCircle } from "lucide-react";
+import { Play, Info, AlertCircle, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SegmentedControl } from "./ui/segmented-control";
 import { Stepper } from "./ui/stepper";
 import { CalendarMatrix, WeekDaySelector } from "./ui/calendar-matrix";
-import { Button } from "./ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -39,11 +38,17 @@ export function StrategyConfig({
 
   return (
     <div className="card-professional p-6 space-y-6">
-      <h3 className="text-lg font-semibold text-text-1">定投策略配置</h3>
+      {/* 标题 */}
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-xl bg-slate-100 text-slate-600">
+          <Settings className="w-5 h-5" />
+        </div>
+        <h3 className="text-lg font-semibold text-slate-900">定投策略配置</h3>
+      </div>
 
       {/* 定投频率 */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-text-2">定投频率</label>
+        <label className="text-sm font-medium text-slate-700">定投频率</label>
         <SegmentedControl
           options={[
             { value: "monthly", label: "每月" },
@@ -60,7 +65,7 @@ export function StrategyConfig({
       {/* 定投日期 - 每天定投时不显示 */}
       {config.frequency !== "daily" && (
         <div className="space-y-3">
-          <label className="text-sm font-medium text-text-2">
+          <label className="text-sm font-medium text-slate-700">
             {config.frequency === "monthly" ? "每月定投日" : "每周定投日"}
           </label>
           {config.frequency === "monthly" ? (
@@ -81,7 +86,7 @@ export function StrategyConfig({
 
       {/* 定投金额 */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-text-2">每次定投金额</label>
+        <label className="text-sm font-medium text-slate-700">每次定投金额</label>
         <Stepper
           value={config.amount}
           onChange={(value) => updateConfig({ amount: value })}
@@ -94,62 +99,62 @@ export function StrategyConfig({
 
       {/* 日期范围 */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-text-2">投资日期范围</label>
+        <label className="text-sm font-medium text-slate-700">投资日期范围</label>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <span className="text-xs text-text-3">开始日期</span>
+          <div className="space-y-1.5">
+            <span className="text-xs text-slate-500">开始日期</span>
             <input
               type="date"
               value={config.startDate}
               onChange={(e) => updateConfig({ startDate: e.target.value })}
               min={minDate}
               max={config.endDate}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-border-default bg-white focus:border-primary focus:outline-none transition-colors"
+              className="input-glass"
             />
           </div>
-          <div className="space-y-1">
-            <span className="text-xs text-text-3">结束日期</span>
+          <div className="space-y-1.5">
+            <span className="text-xs text-slate-500">结束日期</span>
             <input
               type="date"
               value={config.endDate}
               onChange={(e) => updateConfig({ endDate: e.target.value })}
               min={config.startDate}
               max={maxDate}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-border-default bg-white focus:border-primary focus:outline-none transition-colors"
+              className="input-glass"
             />
           </div>
         </div>
       </div>
 
-      {/* 非交易日规则 - 每日定投时隐藏（因为每日定投只在交易日执行） */}
+      {/* 非交易日规则 - 每日定投时隐藏 */}
       {config.frequency !== "daily" && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-text-2">非交易日处理</label>
+            <label className="text-sm font-medium text-slate-700">非交易日处理</label>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Info className="w-4 h-4 text-text-3 cursor-help" />
+                  <Info className="w-4 h-4 text-slate-400 cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  <p>
+                  <p className="text-sm">
                     当定投日遇到周末或节假日时：
                     <br />
-                    <strong>顺延</strong>：在下一个交易日执行买入
+                    <strong className="text-blue-600">顺延</strong>：在下一个交易日执行买入
                     <br />
-                    <strong>跳过</strong>：跳过本次定投
+                    <strong className="text-blue-600">跳过</strong>：跳过本次定投
                   </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <label
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all",
+                "flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200",
                 config.nonTradeDayRule === "next"
-                  ? "bg-primary-50 border-2 border-primary"
-                  : "bg-gray-50 border-2 border-transparent hover:border-border-default"
+                  ? "bg-blue-50 border-2 border-blue-400 text-blue-600"
+                  : "bg-slate-50 border-2 border-transparent text-slate-600 hover:border-slate-200"
               )}
             >
               <input
@@ -162,32 +167,25 @@ export function StrategyConfig({
               />
               <div
                 className={cn(
-                  "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors",
                   config.nonTradeDayRule === "next"
-                    ? "border-primary"
-                    : "border-text-3"
+                    ? "border-blue-500 bg-blue-500"
+                    : "border-slate-300"
                 )}
               >
                 {config.nonTradeDayRule === "next" && (
-                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-white" />
                 )}
               </div>
-              <span
-                className={cn(
-                  "text-sm",
-                  config.nonTradeDayRule === "next" ? "text-primary" : "text-text-2"
-                )}
-              >
-                顺延到下一交易日
-              </span>
+              <span className="text-sm font-medium">顺延</span>
             </label>
 
             <label
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all",
+                "flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200",
                 config.nonTradeDayRule === "skip"
-                  ? "bg-primary-50 border-2 border-primary"
-                  : "bg-gray-50 border-2 border-transparent hover:border-border-default"
+                  ? "bg-blue-50 border-2 border-blue-400 text-blue-600"
+                  : "bg-slate-50 border-2 border-transparent text-slate-600 hover:border-slate-200"
               )}
             >
               <input
@@ -200,24 +198,17 @@ export function StrategyConfig({
               />
               <div
                 className={cn(
-                  "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors",
                   config.nonTradeDayRule === "skip"
-                    ? "border-primary"
-                    : "border-text-3"
+                    ? "border-blue-500 bg-blue-500"
+                    : "border-slate-300"
                 )}
               >
                 {config.nonTradeDayRule === "skip" && (
-                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-white" />
                 )}
               </div>
-              <span
-                className={cn(
-                  "text-sm",
-                  config.nonTradeDayRule === "skip" ? "text-primary" : "text-text-2"
-                )}
-              >
-                跳过
-              </span>
+              <span className="text-sm font-medium">跳过</span>
             </label>
           </div>
         </div>
@@ -225,36 +216,45 @@ export function StrategyConfig({
 
       {/* 错误提示 */}
       {error && (
-        <div className="p-4 rounded-xl bg-profit/10 border border-profit/20 animate-fade-in">
+        <div className="p-4 rounded-xl bg-red-50 border border-red-100">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-profit flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-profit font-medium">模拟计算失败</p>
-              <p className="text-sm text-profit/80 mt-1">{error}</p>
+              <p className="text-red-600 font-medium">模拟计算失败</p>
+              <p className="text-sm text-red-500/80 mt-1">{error}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* 开始模拟按钮 */}
-      <Button
-        className="w-full h-12 text-base font-medium"
-        size="lg"
+      <button
+        className={cn(
+          "w-full h-12 text-base font-medium rounded-xl",
+          "bg-blue-500 text-white",
+          "transition-all duration-200",
+          "hover:bg-blue-600 active:scale-[0.99]",
+          "disabled:opacity-50 disabled:cursor-not-allowed",
+          "flex items-center justify-center gap-2"
+        )}
         onClick={onSimulate}
         disabled={isLoading || config.amount <= 0}
       >
         {isLoading ? (
           <span className="flex items-center gap-2">
-            <span className="animate-spin">⏳</span>
+            <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
             计算中...
           </span>
         ) : (
           <>
-            <Play className="w-5 h-5 mr-2" />
+            <Play className="w-5 h-5" />
             开始模拟
           </>
         )}
-      </Button>
+      </button>
     </div>
   );
 }

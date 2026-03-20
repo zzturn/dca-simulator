@@ -137,83 +137,55 @@ export default function Home() {
   const maxDate = formatDate(new Date());
 
   return (
-    <div className="min-h-screen bg-app-bg">
+    <div className="min-h-screen bg-app-bg-light">
       {/* 顶部导航 */}
       <Header />
 
       {/* Hero 搜索区 */}
-      <div className="bg-gradient-to-b from-white to-app-bg">
-        <FundSearch onSearch={handleSearch} isLoading={searchLoading} />
-      </div>
+      <FundSearch onSearch={handleSearch} isLoading={searchLoading} />
 
       {/* 主内容区 */}
       <main className="container mx-auto px-4 pb-8 max-w-7xl">
         {/* 加载骨架屏 */}
         {searchLoading && (
-          <div className="space-y-6 animate-fade-in">
+          <div className="space-y-6">
             {/* 基金名片骨架屏 */}
             <div className="card-professional p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <Skeleton className="w-12 h-12 rounded-xl" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-6 w-48" />
-                    <Skeleton className="h-4 w-32" />
-                  </div>
-                </div>
-                <div className="flex gap-6">
-                  <div className="text-center">
-                    <Skeleton className="h-4 w-16 mb-1" />
-                    <Skeleton className="h-6 w-20" />
-                  </div>
-                  <div className="text-center">
-                    <Skeleton className="h-4 w-16 mb-1" />
-                    <Skeleton className="h-6 w-20" />
-                  </div>
-                  <div className="text-center">
-                    <Skeleton className="h-4 w-16 mb-1" />
-                    <Skeleton className="h-6 w-20" />
-                  </div>
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-12 h-12 rounded-xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-48 rounded-lg" />
+                  <Skeleton className="h-4 w-32 rounded-lg" />
                 </div>
               </div>
             </div>
 
             {/* 净值走势图骨架屏 */}
-            <div className="card-professional p-6">
+            <div className="chart-container">
               <div className="flex items-center justify-between mb-6">
-                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-6 w-24 rounded-lg" />
                 <div className="flex gap-2">
-                  <Skeleton className="h-8 w-12 rounded-lg" />
-                  <Skeleton className="h-8 w-12 rounded-lg" />
-                  <Skeleton className="h-8 w-12 rounded-lg" />
-                  <Skeleton className="h-8 w-12 rounded-lg" />
-                  <Skeleton className="h-8 w-12 rounded-lg" />
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-9 w-12 rounded-xl" />
+                  ))}
                 </div>
               </div>
-              <Skeleton className="h-[350px] w-full" />
-              <div className="mt-4 flex gap-4">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-24" />
-              </div>
+              <Skeleton className="h-[350px] w-full rounded-xl" />
             </div>
 
             {/* 策略配置 + 结果骨架屏 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* 左侧配置面板骨架屏 */}
               <div className="card-professional p-6 space-y-6">
-                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-6 w-24 rounded-lg" />
                 <div className="space-y-4">
-                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <Skeleton className="h-10 w-full rounded-xl" />
+                  <Skeleton className="h-24 w-full rounded-xl" />
+                  <Skeleton className="h-10 w-full rounded-xl" />
                   <div className="grid grid-cols-2 gap-3">
-                    <Skeleton className="h-10 rounded-lg" />
-                    <Skeleton className="h-10 rounded-lg" />
+                    <Skeleton className="h-10 rounded-xl" />
+                    <Skeleton className="h-10 rounded-xl" />
                   </div>
-                  <Skeleton className="h-10 w-full rounded-lg" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Skeleton className="h-10 rounded-lg" />
-                    <Skeleton className="h-10 rounded-lg" />
-                  </div>
-                  <Skeleton className="h-10 w-full rounded-lg" />
                   <Skeleton className="h-12 w-full rounded-xl" />
                 </div>
               </div>
@@ -221,31 +193,26 @@ export default function Home() {
               {/* 右侧结果骨架屏 */}
               <div className="lg:col-span-2 space-y-6">
                 {/* 收益大字报骨架屏 */}
-                <div className="card-professional p-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="text-center">
-                        <Skeleton className="h-4 w-16 mx-auto mb-2" />
-                        <Skeleton className="h-8 w-24 mx-auto" />
-                      </div>
-                    ))}
-                  </div>
+                <div className="card-professional p-8 text-center">
+                  <Skeleton className="h-8 w-32 mx-auto mb-4 rounded-lg" />
+                  <Skeleton className="h-16 w-40 mx-auto rounded-xl" />
+                  <Skeleton className="h-5 w-28 mx-auto mt-4 rounded-lg" />
                 </div>
 
                 {/* 核心指标骨架屏 */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="card-professional p-4">
-                      <Skeleton className="h-4 w-20 mb-2" />
-                      <Skeleton className="h-6 w-16" />
+                    <div key={i} className="metric-card">
+                      <Skeleton className="h-4 w-16 mb-3 rounded-lg" />
+                      <Skeleton className="h-7 w-20 rounded-lg" />
                     </div>
                   ))}
                 </div>
 
                 {/* 资产曲线骨架屏 */}
-                <div className="card-professional p-6">
-                  <Skeleton className="h-6 w-24 mb-4" />
-                  <Skeleton className="h-[300px] w-full" />
+                <div className="chart-container">
+                  <Skeleton className="h-6 w-24 mb-4 rounded-lg" />
+                  <Skeleton className="h-[300px] w-full rounded-xl" />
                 </div>
               </div>
             </div>

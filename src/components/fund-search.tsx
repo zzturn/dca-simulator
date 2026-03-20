@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FundSearchProps {
@@ -25,7 +25,6 @@ export function FundSearch({ onSearch, isLoading }: FundSearchProps) {
   };
 
   const handleCodeChange = (value: string) => {
-    // 只允许数字输入
     const numericValue = value.replace(/\D/g, "");
     setCode(numericValue.slice(0, 6));
     if (error) setError(false);
@@ -38,21 +37,31 @@ export function FundSearch({ onSearch, isLoading }: FundSearchProps) {
   ];
 
   return (
-    <div className="py-12 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="hero-section py-16 px-4">
+      <div className="max-w-xl mx-auto">
+        {/* 标题 */}
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-white mb-2">
+            定投收益模拟器
+          </h2>
+          <p className="text-white/70">
+            输入基金代码，即刻模拟定投收益
+          </p>
+        </div>
+
         {/* 搜索框 */}
         <form onSubmit={handleSubmit}>
           <div className="relative">
-            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-text-3">
+            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400">
               {isLoading ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <Search className="w-6 h-6" />
+                <Search className="w-5 h-5" />
               )}
             </div>
             <input
               type="text"
-              placeholder="请输入6位基金代码，如 010736"
+              placeholder="请输入6位基金代码"
               value={code}
               onChange={(e) => handleCodeChange(e.target.value)}
               maxLength={6}
@@ -67,7 +76,10 @@ export function FundSearch({ onSearch, isLoading }: FundSearchProps) {
 
         {/* 热门基金标签 */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <span className="text-sm text-text-3">热门:</span>
+          <span className="text-sm text-white/60 flex items-center gap-1">
+            <TrendingUp className="w-4 h-4" />
+            热门:
+          </span>
           {popularFunds.map((fund) => (
             <button
               key={fund.code}

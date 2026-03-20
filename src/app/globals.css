@@ -5,54 +5,31 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 210 11% 15%;
+    --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
-    --card-foreground: 210 11% 15%;
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 11% 15%;
-    --primary: 217 98% 55%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 46%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 220 14% 96%;
-    --accent-foreground: 220 9% 46%;
-    --destructive: 0 84% 60%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 262.1 83.3% 57.8%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.4% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 98% 55%;
-    --radius: 12px;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 217.2 91.2% 59.8%;
+    --radius: 16px;
 
     /* 自定义变量 */
-    --profit-color: #F53F3F;
-    --loss-color: #00B42A;
-    --wealth-color: #F2994A;
-    --app-bg: #F7F8FA;
-    --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 98% 55%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --profit-color: #EF4444;
+    --loss-color: #10B981;
+    --wealth-color: #F59E0B;
+    --primary-color: #3B82F6;
   }
 }
 
@@ -62,32 +39,74 @@
   }
 
   body {
-    @apply bg-app-bg text-text-1;
-    font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    @apply bg-slate-50 text-slate-900;
+    font-family: "Inter", "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   /* 数字字体 */
   .font-number {
-    font-family: "DIN Condensed", "PingFang SC", monospace;
+    font-family: "DIN Condensed", "SF Mono", "PingFang SC", monospace;
     font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background-color: rgba(59, 130, 246, 0.2);
   }
 }
 
 @layer components {
-  /* 卡片基础样式 */
+  /* ========== 卡片样式 ========== */
   .card-professional {
-    @apply bg-card-bg rounded-2xl;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    transition: box-shadow 0.2s ease;
+    @apply bg-white rounded-2xl border border-slate-200/60;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
   }
 
   .card-professional:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 
-  /* 利润/亏损颜色 */
+  /* ========== Hero 区域 ========== */
+  .hero-section {
+    @apply relative overflow-hidden;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  }
+
+  /* ========== 搜索框 ========== */
+  .hero-search {
+    @apply w-full px-6 py-4 text-lg rounded-2xl;
+    @apply bg-white border-2 border-transparent;
+    @apply text-slate-900 placeholder-slate-400;
+    @apply transition-all duration-200;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .hero-search:focus {
+    @apply border-blue-400;
+    box-shadow: 0 4px 25px rgba(59, 130, 246, 0.2);
+    outline: none;
+  }
+
+  .hero-search.error {
+    @apply border-red-400;
+    animation: shake 0.3s ease-in-out;
+  }
+
+  /* ========== 热门标签 ========== */
+  .hot-tag {
+    @apply px-4 py-2 text-sm rounded-full;
+    @apply bg-white/20 text-white/90;
+    @apply border border-white/30;
+    @apply transition-all duration-200 cursor-pointer;
+  }
+
+  .hot-tag:hover {
+    @apply bg-white/30 text-white;
+  }
+
+  /* ========== 利润/亏损颜色 ========== */
   .text-profit {
     color: var(--profit-color);
   }
@@ -104,115 +123,123 @@
     background-color: var(--loss-color);
   }
 
-  /* 大字报样式 */
+  /* ========== 大字报样式 ========== */
   .display-number {
     @apply font-number text-display;
     letter-spacing: -0.02em;
   }
 
-  /* 分段选择器样式 */
+  /* ========== 分段选择器样式 ========== */
   .segmented-control {
-    @apply relative inline-flex p-1 bg-gray-100 rounded-lg;
+    @apply relative inline-flex p-1 rounded-xl bg-slate-100;
   }
 
   .segmented-control-item {
-    @apply relative px-4 py-2 text-sm font-medium text-text-2 rounded-md transition-all duration-200 cursor-pointer;
+    @apply relative px-4 py-2 text-sm font-medium rounded-lg;
+    @apply text-slate-500 transition-all duration-200 cursor-pointer;
   }
 
   .segmented-control-item.active {
-    @apply bg-white text-text-1 shadow-sm;
+    @apply bg-white text-slate-900 shadow-sm;
   }
 
-  /* 日历矩阵 */
+  /* 时间范围选择器 */
+  .time-range-btn {
+    @apply px-4 py-2 text-sm font-medium rounded-xl;
+    @apply transition-all duration-200;
+    @apply text-slate-500 hover:text-slate-700 hover:bg-slate-100;
+  }
+
+  .time-range-btn.active {
+    @apply bg-blue-500 text-white hover:bg-blue-600;
+  }
+
+  /* ========== 指标卡片 ========== */
+  .metric-card {
+    @apply bg-white rounded-2xl p-5 border border-slate-100;
+    transition: all 0.2s ease;
+  }
+
+  .metric-card:hover {
+    @apply border-slate-200;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .metric-value {
+    @apply text-2xl font-bold font-number text-slate-900;
+  }
+
+  .metric-label {
+    @apply text-sm text-slate-500 mb-2;
+  }
+
+  /* ========== 按钮样式 ========== */
+  .btn-primary {
+    @apply px-6 py-3 rounded-xl font-medium;
+    @apply bg-blue-500 text-white;
+    @apply transition-all duration-200;
+    @apply hover:bg-blue-600 active:scale-[0.98];
+  }
+
+  /* ========== 步进器 ========== */
+  .stepper-btn {
+    @apply w-11 h-11 flex items-center justify-center rounded-xl;
+    @apply border border-slate-200 bg-white text-slate-600;
+    @apply transition-all duration-200 cursor-pointer;
+    @apply hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50;
+  }
+
+  .stepper-btn:disabled {
+    @apply opacity-40 cursor-not-allowed hover:border-slate-200 hover:text-slate-600 hover:bg-white;
+  }
+
+  /* ========== 快捷金额按钮 ========== */
+  .quick-amount-btn {
+    @apply px-4 py-2 text-sm rounded-xl;
+    @apply border border-slate-200 bg-white text-slate-600;
+    @apply transition-all duration-200 cursor-pointer;
+    @apply hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50;
+  }
+
+  /* ========== 输入框 ========== */
+  .input-glass {
+    @apply w-full px-4 py-3 rounded-xl;
+    @apply border border-slate-200 bg-white;
+    @apply text-slate-900 placeholder-slate-400;
+    @apply transition-all duration-200;
+    @apply focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none;
+  }
+
+  /* ========== 日历矩阵 ========== */
   .calendar-matrix {
     @apply grid grid-cols-7 gap-1;
   }
 
   .calendar-day {
-    @apply w-8 h-8 flex items-center justify-center text-sm rounded-md cursor-pointer transition-all duration-150;
-  }
-
-  .calendar-day:hover {
-    @apply bg-gray-100;
+    @apply w-10 h-10 flex items-center justify-center text-sm rounded-xl cursor-pointer;
+    @apply text-slate-600 transition-all duration-150;
+    @apply hover:bg-slate-100;
   }
 
   .calendar-day.selected {
-    @apply bg-primary text-white;
+    @apply bg-blue-500 text-white hover:bg-blue-600;
   }
 
   .calendar-day.disabled {
-    @apply text-text-4 cursor-not-allowed;
+    @apply text-slate-300 cursor-not-allowed hover:bg-transparent;
   }
 
-  /* 步进器 */
-  .stepper {
-    @apply flex items-center gap-3;
+  /* ========== 图表容器 ========== */
+  .chart-container {
+    @apply bg-white rounded-2xl p-6 border border-slate-200/60;
   }
 
-  .stepper-btn {
-    @apply w-10 h-10 flex items-center justify-center rounded-lg border border-border-default bg-white text-text-2 transition-all duration-150;
-  }
-
-  .stepper-btn:hover:not(:disabled) {
-    @apply border-primary text-primary;
-  }
-
-  .stepper-btn:disabled {
-    @apply opacity-50 cursor-not-allowed;
-  }
-
-  /* 快捷金额按钮 */
-  .quick-amount-btn {
-    @apply px-3 py-1.5 text-sm rounded-md border border-border-default bg-white text-text-2 transition-all duration-150;
-  }
-
-  .quick-amount-btn:hover {
-    @apply border-primary text-primary bg-primary-50;
-  }
-
-  /* 错误震动动画 */
-  .error-shake {
-    animation: shake 0.3s ease-in-out;
-  }
-
-  /* 热门标签 */
-  .hot-tag {
-    @apply px-3 py-1.5 text-sm rounded-full bg-gray-100 text-text-2 transition-all duration-200 cursor-pointer;
-  }
-
-  .hot-tag:hover {
-    @apply bg-primary-50 text-primary;
-  }
-
-  /* Hero搜索框 */
-  .hero-search {
-    @apply w-full px-6 py-4 text-lg bg-white rounded-2xl border-2 border-transparent shadow-card transition-all duration-200;
-  }
-
-  .hero-search:focus {
-    @apply border-primary shadow-card-hover outline-none;
-  }
-
-  .hero-search.error {
-    @apply border-profit error-shake;
-  }
-
-  /* 指标卡片 */
-  .metric-card {
-    @apply card-professional p-4;
-  }
-
-  .metric-value {
-    @apply text-2xl font-bold font-number;
-  }
-
-  .metric-label {
-    @apply text-sm text-text-3;
+  .chart-title {
+    @apply text-lg font-semibold text-slate-900;
   }
 }
 
 @layer utilities {
-  /* 隐藏滚动条但保持滚动功能 */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -222,13 +249,17 @@
     display: none;
   }
 
-  /* 文字截断 */
   .text-truncate {
     @apply overflow-hidden text-ellipsis whitespace-nowrap;
   }
+}
 
-  /* 渐变文字 */
-  .text-gradient {
-    @apply bg-gradient-to-r from-primary to-primary-400 bg-clip-text text-transparent;
-  }
+/* ========== Recharts 图表样式 ========== */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #e2e8f0;
+}
+
+.recharts-text {
+  fill: #94a3b8;
 }

@@ -12,50 +12,50 @@ const config: Config = {
       colors: {
         // 主色调
         primary: {
-          DEFAULT: "#1A5CFE",
+          DEFAULT: "#3B82F6",
           50: "#EFF6FF",
           100: "#DBEAFE",
           200: "#BFDBFE",
           300: "#93C5FD",
           400: "#60A5FA",
-          500: "#1A5CFE",
-          600: "#1A5CFE",
+          500: "#3B82F6",
+          600: "#2563EB",
           700: "#1D4ED8",
           800: "#1E40AF",
           900: "#1E3A8A",
         },
-        // 财富金 - 关键收益数据强调
+        // 财富金
         wealth: {
-          DEFAULT: "#F2994A",
-          50: "#FFF7ED",
-          100: "#FFEDD5",
-          200: "#FED7AA",
-          300: "#FDBA74",
-          400: "#FB923C",
-          500: "#F2994A",
-          600: "#EA580C",
-          700: "#C2410C",
-          800: "#9A3412",
-          900: "#7C2D12",
+          DEFAULT: "#F59E0B",
+          50: "#FFFBEB",
+          100: "#FEF3C7",
+          200: "#FDE68A",
+          300: "#FCD34D",
+          400: "#FBBF24",
+          500: "#F59E0B",
+          600: "#D97706",
+          700: "#B45309",
+          800: "#92400E",
+          900: "#78350F",
         },
         // 金融色 - 遵循中国股市惯例
         profit: {
-          DEFAULT: "#F53F3F",
-          light: "#FB7185",
+          DEFAULT: "#EF4444",
+          light: "#F87171",
           dark: "#DC2626",
         },
         loss: {
-          DEFAULT: "#00B42A",
-          light: "#4ADE80",
-          dark: "#16A34A",
+          DEFAULT: "#10B981",
+          light: "#34D399",
+          dark: "#059669",
         },
         // 文字层级
-        "text-1": "#1D2129", // 主文字
-        "text-2": "#4E5969", // 次文字
-        "text-3": "#86909C", // 辅助文字
-        "text-4": "#C9CDD4", // 禁用
+        "text-1": "#1F2937",
+        "text-2": "#4B5563",
+        "text-3": "#9CA3AF",
+        "text-4": "#D1D5DB",
         // 背景与边框
-        "app-bg": "#F7F8FA",
+        "app-bg": "#F8FAFC",
         "card-bg": "#FFFFFF",
         "border-default": "#E5E6EB",
         // 原有 shadcn 兼容色
@@ -88,24 +88,23 @@ const config: Config = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        warning: "#FA8C16",
+        warning: "#F59E0B",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
         "2xl": "16px",
-        "3xl": "20px",
+        "3xl": "24px",
       },
       boxShadow: {
-        "card": "0 2px 12px rgba(0, 0, 0, 0.08)",
-        "card-hover": "0 4px 16px rgba(0, 0, 0, 0.12)",
-        "popup": "0 4px 24px rgba(0, 0, 0, 0.12)",
+        "card": "0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03)",
+        "card-hover": "0 4px 12px rgba(0, 0, 0, 0.08)",
       },
       fontFamily: {
-        sans: ["PingFang SC", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        sans: ["Inter", "PingFang SC", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
         mono: ["JetBrains Mono", "Menlo", "Monaco", "Consolas", "monospace"],
-        number: ["DIN Condensed", "PingFang SC", "monospace"],
+        number: ["DIN Condensed", "SF Mono", "PingFang SC", "monospace"],
       },
       fontSize: {
         "display": ["48px", { lineHeight: "1.1", fontWeight: "700" }],
@@ -114,16 +113,10 @@ const config: Config = {
         "caption": ["12px", { lineHeight: "1.4", fontWeight: "400" }],
       },
       animation: {
-        "shake": "shake 0.3s ease-in-out",
         "fade-in": "fadeIn 0.2s ease-out",
         "slide-up": "slideUp 0.3s ease-out",
       },
       keyframes: {
-        shake: {
-          "0%, 100%": { transform: "translateX(0)" },
-          "25%": { transform: "translateX(-4px)" },
-          "75%": { transform: "translateX(4px)" },
-        },
         fadeIn: {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },

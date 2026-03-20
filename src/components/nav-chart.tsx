@@ -15,6 +15,7 @@ import { Skeleton } from "./ui/skeleton";
 import type { NavPoint, InvestmentRecord, TimeRange, DCAConfig } from "@/lib/types";
 import { getTimeRangeStart } from "@/lib/date-utils";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+import { LineChart, Calendar } from "lucide-react";
 
 interface NavChartProps {
   navHistory: NavPoint[];
@@ -48,10 +49,10 @@ function createCustomDot(investDates: Set<string>) {
       <circle
         cx={cx}
         cy={cy}
-        r={3}
-        fill="#F53F3F"
+        r={4}
+        fill="#EF4444"
         stroke="#fff"
-        strokeWidth={1}
+        strokeWidth={2}
         style={{ cursor: "pointer" }}
       />
     );
@@ -206,31 +207,50 @@ export function NavChart({
     const accumulatedValue = firstPayload?.accumulatedNav ?? payload.find((p) => p.dataKey === "accumulatedNav")?.value;
 
     return (
-      <div className="bg-white border border-border-default rounded-xl p-3 shadow-lg">
-        <p className="text-sm font-medium text-text-1 mb-2">{dateStr}</p>
+      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-3 min-w-[180px]">
+        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
+          <Calendar className="w-4 h-4 text-slate-400" />
+          <p className="text-sm font-medium text-slate-900">{dateStr}</p>
+        </div>
 
         {/* 净值信息 */}
-        {navValue !== undefined && (
-          <p className="text-sm" style={{ color: "#1A5CFE" }}>
-            单位净值: {navValue.toFixed(4)}
-          </p>
-        )}
-        {accumulatedValue !== undefined && showAccumulated && (
-          <p className="text-sm" style={{ color: "#FA8C16" }}>
-            累计净值: {accumulatedValue.toFixed(4)}
-          </p>
-        )}
+        <div className="space-y-1.5">
+          {navValue !== undefined && (
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-slate-500">单位净值</span>
+              <span className="text-sm font-semibold text-blue-500">
+                {navValue.toFixed(4)}
+              </span>
+            </div>
+          )}
+          {accumulatedValue !== undefined && showAccumulated && (
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-slate-500">累计净值</span>
+              <span className="text-sm font-semibold text-amber-500">
+                {accumulatedValue.toFixed(4)}
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* 投资信息（如果是投资点） */}
         {isInvestPoint && investRecord && (
-          <div className="mt-2 pt-2 border-t border-border-default">
-            <p className="text-xs text-text-3 mb-1">定投买入</p>
-            <p className="text-sm text-profit font-medium">
-              金额: {formatCurrency(investRecord.amount)}
-            </p>
-            <p className="text-sm text-text-2">
-              份额: {formatNumber(investRecord.shares, 2)}
-            </p>
+          <div className="mt-2 pt-2 border-t border-slate-100">
+            <p className="text-xs font-medium text-red-500 mb-1.5">定投买入</p>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-slate-500">金额</span>
+                <span className="text-sm font-semibold text-red-500">
+                  {formatCurrency(investRecord.amount)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-slate-500">份额</span>
+                <span className="text-sm font-medium text-slate-700">
+                  {formatNumber(investRecord.shares, 2)}
+                </span>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -239,17 +259,22 @@ export function NavChart({
 
   if (isLoading) {
     return (
-      <div className="card-professional p-6">
-        <Skeleton className="h-[400px] w-full" />
+      <div className="chart-container">
+        <Skeleton className="h-[400px] w-full rounded-xl" />
       </div>
     );
   }
 
   return (
-    <div className="card-professional p-6">
+    <div className="chart-container">
       {/* 标题和时间切换 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h3 className="text-lg font-semibold text-text-1">净值走势</h3>
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-blue-50 text-blue-500">
+            <LineChart className="w-5 h-5" />
+          </div>
+          <h3 className="chart-title">净值走势</h3>
+        </div>
         <div className="flex gap-2">
           {timeRangeOptions.map((option) => (
             <button
@@ -257,10 +282,8 @@ export function NavChart({
               type="button"
               onClick={() => onTimeRangeChange(option.value)}
               className={cn(
-                "px-3 py-1.5 text-sm rounded-lg transition-all duration-200",
-                timeRange === option.value
-                  ? "bg-primary text-white"
-                  : "bg-gray-100 text-text-2 hover:bg-gray-200"
+                "time-range-btn",
+                timeRange === option.value && "active"
               )}
             >
               {option.label}
@@ -274,22 +297,21 @@ export function NavChart({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={chartData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
           >
             <defs>
               {/* 净值线渐变填充 */}
               <linearGradient id="navAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1A5CFE" stopOpacity={0.25} />
-                <stop offset="50%" stopColor="#1A5CFE" stopOpacity={0.1} />
-                <stop offset="100%" stopColor="#1A5CFE" stopOpacity={0} />
+                <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.2} />
+                <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
               </linearGradient>
               {/* 累计净值渐变填充 */}
               <linearGradient id="accNavAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#FA8C16" stopOpacity={0.15} />
-                <stop offset="100%" stopColor="#FA8C16" stopOpacity={0} />
+                <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.15} />
+                <stop offset="100%" stopColor="#F59E0B" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E5E6EB" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis
               dataKey="ts"
               type="number"
@@ -297,14 +319,16 @@ export function NavChart({
               scale="time"
               allowDataOverflow
               tickFormatter={formatXAxis}
-              tick={{ fontSize: 12, fill: "#86909C" }}
-              axisLine={{ stroke: "#E5E6EB" }}
+              tick={{ fontSize: 12, fill: "#94a3b8" }}
+              axisLine={{ stroke: "#e2e8f0" }}
+              tickLine={{ stroke: "#e2e8f0" }}
             />
             <YAxis
               domain={["auto", "auto"]}
-              tick={{ fontSize: 12, fill: "#86909C" }}
+              tick={{ fontSize: 12, fill: "#94a3b8" }}
               tickFormatter={(v) => v.toFixed(2)}
-              axisLine={{ stroke: "#E5E6EB" }}
+              axisLine={{ stroke: "#e2e8f0" }}
+              tickLine={{ stroke: "#e2e8f0" }}
             />
             <Tooltip content={<CustomTooltip />} />
 
@@ -321,7 +345,7 @@ export function NavChart({
             <Area
               type="monotone"
               dataKey="nav"
-              stroke="#1A5CFE"
+              stroke="#3B82F6"
               strokeWidth={2}
               fill="none"
               dot={createCustomDot(investDates)}
@@ -343,7 +367,7 @@ export function NavChart({
               <Area
                 type="monotone"
                 dataKey="accumulatedNav"
-                stroke="#FA8C16"
+                stroke="#F59E0B"
                 strokeWidth={2}
                 fill="none"
                 dot={false}
@@ -354,22 +378,22 @@ export function NavChart({
       </div>
 
       {/* 图例 */}
-      <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-text-3">
+      <div className="mt-4 flex flex-wrap items-center gap-6 text-sm">
         {/* 每天定投时不显示买入点图例 */}
         {frequency !== "daily" && (
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-profit" />
-            <span>定投买入点</span>
+            <div className="w-3 h-3 rounded-full bg-red-500" />
+            <span className="text-slate-500">定投买入点</span>
           </div>
         )}
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="flex items-center gap-2 cursor-pointer group">
           <input
             type="checkbox"
             checked={showAccumulated}
             onChange={(e) => setShowAccumulated(e.target.checked)}
-            className="w-4 h-4 rounded border-border-default text-primary focus:ring-primary"
+            className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
           />
-          <span>显示累计净值</span>
+          <span className="text-slate-500 group-hover:text-slate-700">显示累计净值</span>
         </label>
       </div>
     </div>
