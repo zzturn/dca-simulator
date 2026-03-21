@@ -211,11 +211,12 @@ export function AssetChart({ records }: AssetChartProps) {
       </div>
 
       {/* 图表 */}
-      <div className="h-48 w-full relative">
+      <div className="h-48 w-full relative" onMouseDown={(e) => e.preventDefault()}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={chartData}
             margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+            tabIndex={-1}
           >
             <defs>
               {/* 盈利区域渐变 - 红色 */}

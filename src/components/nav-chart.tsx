@@ -171,6 +171,7 @@ export function NavChart({
 
   // 鼠标按下开始拖拽
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
     const ts = getTimestampFromEvent(e);
     if (ts !== null) {
       setIsDragging(true);
@@ -389,6 +390,7 @@ export function NavChart({
           <AreaChart
             data={chartData}
             margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+            tabIndex={-1}
           >
             <defs>
               <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
