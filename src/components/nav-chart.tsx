@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import {
   AreaChart,
   Area,
@@ -9,13 +9,14 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceArea,
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "./ui/skeleton";
 import type { NavPoint, InvestmentRecord, TimeRange, DCAConfig } from "@/lib/types";
 import { getTimeRangeStart } from "@/lib/date-utils";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { Calendar } from "lucide-react";
+import { Calendar, ZoomIn, RotateCcw } from "lucide-react";
 
 interface NavChartProps {
   navHistory: NavPoint[];
@@ -69,11 +70,29 @@ export function NavChart({
 }: NavChartProps) {
   const [showAccumulated, setShowAccumulated] = useState(false);
 
-  // 计算时间范围的起始时间戳
+  // 拖拽选择相关状态
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartTs, setDragStartTs] = useState<number | null>(null);
+  const [dragEndTs, setDragEndTs] = useState<number | null>(null);
+  const [customRange, setCustomRange] = useState<{ start: number; end: number } | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  // 计算时间范围的起始时间戳（支持自定义范围）
   const timeRangeStartTs = useMemo(() => {
+    if (customRange) {
+      return customRange.start;
+    }
     const startDate = getTimeRangeStart(timeRange);
     return startDate ? new Date(startDate).getTime() : null;
-  }, [timeRange]);
+  }, [timeRange, customRange]);
+
+  // 计算时间范围的结束时间戳（支持自定义范围）
+  const timeRangeEndTs = useMemo(() => {
+    if (customRange) {
+      return customRange.end;
+    }
+    return null; // 使用 dataMax
+  }, [customRange]);
 
   // 投资日期集合
   const investDates = useMemo(() => {
@@ -124,20 +143,81 @@ export function NavChart({
     return sampled;
   }, [navHistory, investDates]);
 
-  // XAxis domain
+  // XAxis domain（支持自定义范围）
   const xAxisDomain = useMemo((): [number | string, number | string] => {
+    if (customRange) {
+      return [customRange.start, customRange.end];
+    }
     if (timeRangeStartTs === null) return ["dataMin", "dataMax"];
     return [timeRangeStartTs, "dataMax"];
-  }, [timeRangeStartTs]);
+  }, [timeRangeStartTs, customRange]);
+
+  // 获取图表坐标对应的时间戳
+  const getTimestampFromEvent = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!chartRef.current || !chartData.length) return null;
+
+    const rect = chartRef.current.getBoundingClientRect();
+    const chartWidth = rect.width - 50; // 减去 Y 轴宽度
+    const mouseX = e.clientX - rect.left - 50; // 减去 Y 轴偏移
+
+    if (mouseX < 0 || mouseX > chartWidth) return null;
+
+    const minTs = customRange?.start ?? timeRangeStartTs ?? chartData[0].ts;
+    const maxTs = customRange?.end ?? chartData[chartData.length - 1].ts;
+
+    const ratio = mouseX / chartWidth;
+    return minTs + ratio * (maxTs - minTs);
+  }, [chartData, customRange, timeRangeStartTs]);
+
+  // 鼠标按下开始拖拽
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const ts = getTimestampFromEvent(e);
+    if (ts !== null) {
+      setIsDragging(true);
+      setDragStartTs(ts);
+      setDragEndTs(ts);
+    }
+  }, [getTimestampFromEvent]);
+
+  // 鼠标移动更新拖拽范围
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    const ts = getTimestampFromEvent(e);
+    if (ts !== null) {
+      setDragEndTs(ts);
+    }
+  }, [isDragging, getTimestampFromEvent]);
+
+  // 鼠标松开完成拖拽
+  const handleMouseUp = useCallback(() => {
+    if (isDragging && dragStartTs !== null && dragEndTs !== null) {
+      const minTs = Math.min(dragStartTs, dragEndTs);
+      const maxTs = Math.max(dragStartTs, dragEndTs);
+
+      // 只有当选择范围大于 7 天时才应用
+      if (maxTs - minTs > 7 * 24 * 60 * 60 * 1000) {
+        setCustomRange({ start: minTs, end: maxTs });
+      }
+    }
+    setIsDragging(false);
+    setDragStartTs(null);
+    setDragEndTs(null);
+  }, [isDragging, dragStartTs, dragEndTs]);
+
+  // 重置到原始范围
+  const handleResetZoom = useCallback(() => {
+    setCustomRange(null);
+    onTimeRangeChange("all");
+  }, [onTimeRangeChange]);
 
   // 计算X轴刻度 - 使用当前显示范围的边界值
   const tickValues = useMemo(() => {
     if (!chartData.length) return [];
-    const maxTs = chartData[chartData.length - 1].ts;
+    const maxTs = customRange ? customRange.end : chartData[chartData.length - 1].ts;
     // 如果有时间范围限制，左侧标签显示时间范围起始点；否则显示数据起始点
     const minTs = timeRangeStartTs ?? chartData[0].ts;
     return [minTs, maxTs];
-  }, [chartData, timeRangeStartTs]);
+  }, [chartData, timeRangeStartTs, customRange]);
 
   // 投资点数据
   const investPointsMap = useMemo(() => {
@@ -290,7 +370,21 @@ export function NavChart({
       </div>
 
       {/* 图表 */}
-      <div className="h-64 relative">
+      <div
+        ref={chartRef}
+        className="h-64 relative select-none"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={() => {
+          if (isDragging) {
+            setIsDragging(false);
+            setDragStartTs(null);
+            setDragEndTs(null);
+          }
+        }}
+        style={{ cursor: isDragging ? 'crosshair' : 'default' }}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={chartData}
@@ -308,6 +402,10 @@ export function NavChart({
               <linearGradient id="accNavAreaGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.15} />
                 <stop offset="100%" stopColor="#F59E0B" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="selectionGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} stroke="rgba(148, 163, 184, 0.08)" />
@@ -373,6 +471,18 @@ export function NavChart({
                 dot={false}
               />
             )}
+
+            {/* 拖拽选择区域 */}
+            {isDragging && dragStartTs !== null && dragEndTs !== null && (
+              <ReferenceArea
+                x1={Math.min(dragStartTs, dragEndTs)}
+                x2={Math.max(dragStartTs, dragEndTs)}
+                fill="url(#selectionGradient)"
+                stroke="#3b82f6"
+                strokeWidth={1}
+                strokeOpacity={0.5}
+              />
+            )}
           </AreaChart>
         </ResponsiveContainer>
 
@@ -386,6 +496,25 @@ export function NavChart({
               {formatXAxis(tickValues[1])}
             </div>
           </>
+        )}
+
+        {/* 拖拽提示 */}
+        {!customRange && (
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 text-[10px] text-slate-500 bg-slate-900/80 px-2 py-1 rounded-md">
+            <ZoomIn className="w-3 h-3" />
+            <span>拖拽放大</span>
+          </div>
+        )}
+
+        {/* 重置按钮 */}
+        {customRange && (
+          <button
+            onClick={handleResetZoom}
+            className="absolute top-2 right-2 flex items-center gap-1.5 text-[10px] text-blue-400 bg-slate-900/80 px-2 py-1 rounded-md hover:bg-slate-800 transition-colors"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>重置</span>
+          </button>
         )}
       </div>
 
