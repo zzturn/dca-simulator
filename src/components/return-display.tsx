@@ -99,7 +99,7 @@ export function ReturnDisplay({ result, className }: ReturnDisplayProps) {
             />
           </div>
           <div className="text-xs text-slate-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full font-medium">
-            截至 {result.endDate}
+            截至 {result.records[result.records.length - 1]?.date || ""}
           </div>
         </div>
       </div>
