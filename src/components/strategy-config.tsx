@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Info, AlertCircle, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CalendarMatrix } from "./ui/calendar-matrix";
+import { DateSegmentInput } from "./ui/date-segment-input";
 import {
   Tooltip,
   TooltipContent,
@@ -191,41 +192,21 @@ export function StrategyConfig({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <span className="text-[10px] font-bold text-slate-500 uppercase ml-1">开始日期</span>
-            <div className="relative">
-              <input
-                type="date"
-                value={config.startDate}
-                onChange={(e) => updateConfig({ startDate: e.target.value })}
-                min={minDate}
-                max={config.endDate}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              <div className="w-full bg-slate-950 border border-white/10 rounded-xl py-3 px-3 text-sm font-semibold text-white hover:border-white/20 transition-all cursor-pointer flex items-center justify-between">
-                <span>{formatDateDisplay(config.startDate)}</span>
-                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-            </div>
+            <DateSegmentInput
+              value={config.startDate}
+              onChange={(value) => updateConfig({ startDate: value })}
+              min={minDate}
+              max={config.endDate}
+            />
           </div>
           <div className="space-y-1.5">
             <span className="text-[10px] font-bold text-slate-500 uppercase ml-1">结束日期</span>
-            <div className="relative">
-              <input
-                type="date"
-                value={config.endDate}
-                onChange={(e) => updateConfig({ endDate: e.target.value })}
-                min={config.startDate}
-                max={maxDate}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              <div className="w-full bg-slate-950 border border-white/10 rounded-xl py-3 px-3 text-sm font-semibold text-white hover:border-white/20 transition-all cursor-pointer flex items-center justify-between">
-                <span>{formatDateDisplay(config.endDate)}</span>
-                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-            </div>
+            <DateSegmentInput
+              value={config.endDate}
+              onChange={(value) => updateConfig({ endDate: value })}
+              min={config.startDate}
+              max={maxDate}
+            />
           </div>
         </div>
       </div>
