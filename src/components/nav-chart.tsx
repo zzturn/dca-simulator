@@ -49,10 +49,10 @@ function createCustomDot(investDates: Set<string>) {
       <circle
         cx={cx}
         cy={cy}
-        r={4}
+        r={2}
         fill="#EF4444"
         stroke="#fff"
-        strokeWidth={2}
+        strokeWidth={0.5}
         style={{ cursor: "pointer" }}
       />
     );
@@ -130,6 +130,15 @@ export function NavChart({
     return [timeRangeStartTs, "dataMax"];
   }, [timeRangeStartTs]);
 
+  // 计算X轴刻度 - 使用当前显示范围的边界值
+  const tickValues = useMemo(() => {
+    if (!chartData.length) return [];
+    const maxTs = chartData[chartData.length - 1].ts;
+    // 如果有时间范围限制，左侧标签显示时间范围起始点；否则显示数据起始点
+    const minTs = timeRangeStartTs ?? chartData[0].ts;
+    return [minTs, maxTs];
+  }, [chartData, timeRangeStartTs]);
+
   // 投资点数据
   const investPointsMap = useMemo(() => {
     const map = new Map<string, { amount: number; shares: number }>();
@@ -141,11 +150,14 @@ export function NavChart({
     return map;
   }, [investRecords]);
 
-  // 格式化X轴
+  // 格式化X轴日期 - 显示完整日期
   const formatXAxis = (ts: number) => {
     if (!ts) return "";
     const d = new Date(ts);
-    return `${d.getMonth() + 1}/${d.getDate()}`;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}/${month}/${day}`;
   };
 
   // 格式化时间戳
@@ -154,7 +166,7 @@ export function NavChart({
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    return `${year}/${month}/${day}`;
   };
 
   // 自定义Tooltip
@@ -282,7 +294,7 @@ export function NavChart({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={chartData}
-            margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
+            margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
           >
             <defs>
               <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -298,24 +310,25 @@ export function NavChart({
                 <stop offset="100%" stopColor="#F59E0B" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
+            <CartesianGrid vertical={false} stroke="rgba(148, 163, 184, 0.08)" />
             <XAxis
               dataKey="ts"
               type="number"
               domain={xAxisDomain}
               scale="time"
               allowDataOverflow
-              tickFormatter={formatXAxis}
-              tick={{ fontSize: 12, fill: "#94a3b8" }}
+              ticks={tickValues}
+              tick={false}
               axisLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
-              tickLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
+              tickLine={false}
             />
             <YAxis
               domain={["auto", "auto"]}
-              tick={{ fontSize: 12, fill: "#94a3b8" }}
+              tick={{ fontSize: 11, fill: "#64748b" }}
               tickFormatter={(v) => v.toFixed(2)}
               axisLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
               tickLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
+              width={50}
             />
             <Tooltip content={<CustomTooltip />} />
 
@@ -362,6 +375,18 @@ export function NavChart({
             )}
           </AreaChart>
         </ResponsiveContainer>
+
+        {/* 日期标签 - 独立于图表渲染，与图表绘图区域对齐 */}
+        {tickValues.length === 2 && (
+          <>
+            <div className="absolute left-[50px] bottom-0 text-[11px] text-slate-500">
+              {formatXAxis(tickValues[0])}
+            </div>
+            <div className="absolute right-0 bottom-0 text-[11px] text-slate-500">
+              {formatXAxis(tickValues[1])}
+            </div>
+          </>
+        )}
       </div>
 
       {/* 图例 */}

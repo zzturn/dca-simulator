@@ -37,6 +37,7 @@ export function AssetChart({ records }: AssetChartProps) {
 
         return {
           ...r,
+          ts: new Date(r.date).getTime(),
           profitValue: (isProfit || isTransitionPoint) ? r.currentValue : null,
           lossValue: (!isProfit || isTransitionPoint) ? r.currentValue : null,
         };
@@ -55,6 +56,7 @@ export function AssetChart({ records }: AssetChartProps) {
       const isProfit = lastRecord.currentValue >= lastRecord.totalCost;
       sampled.push({
         ...lastRecord,
+        ts: new Date(lastRecord.date).getTime(),
         profitValue: isProfit ? lastRecord.currentValue : null,
         lossValue: !isProfit ? lastRecord.currentValue : null,
       } as typeof sampled[0]);
@@ -63,11 +65,40 @@ export function AssetChart({ records }: AssetChartProps) {
     return sampled;
   }, [records]);
 
-  // 格式化X轴日期
-  const formatXAxis = (date: string) => {
-    if (!date) return "";
-    const d = new Date(date);
-    return `${d.getMonth() + 1}/${d.getDate()}`;
+  // 计算X轴刻度 - 只显示起始和结束日期
+  const tickValues = useMemo(() => {
+    if (!chartData.length) return [];
+    const minTs = chartData[0].ts;
+    const maxTs = chartData[chartData.length - 1].ts;
+    return [minTs, maxTs];
+  }, [chartData]);
+
+  // 计算时间跨度（天）
+  const timeSpanDays = useMemo(() => {
+    if (!chartData.length) return 0;
+    const first = chartData[0];
+    const last = chartData[chartData.length - 1];
+    return Math.ceil((last.ts - first.ts) / (1000 * 60 * 60 * 24));
+  }, [chartData]);
+
+  // 格式化X轴日期 - 显示完整日期
+  const formatXAxis = (ts: number) => {
+    if (!ts) return "";
+    const d = new Date(ts);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}/${month}/${day}`;
+  };
+
+  // 格式化日期
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}/${month}/${day}`;
   };
 
   // 自定义Tooltip
@@ -81,11 +112,12 @@ export function AssetChart({ records }: AssetChartProps) {
       value: number;
       dataKey: string;
       payload?: {
+        date: string;
         currentValue: number;
         totalCost: number;
       };
     }>;
-    label?: string;
+    label?: number;
   }) => {
     if (!active || !payload || payload.length === 0) return null;
 
@@ -96,11 +128,13 @@ export function AssetChart({ records }: AssetChartProps) {
     const profitRate = cost > 0 ? ((current - cost) / cost) * 100 : 0;
     const isProfit = profit >= 0;
 
+    const dateStr = entry?.date || "";
+
     return (
       <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl p-3 min-w-[200px] border border-white/10">
         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
           <Calendar className="w-4 h-4 text-slate-400" />
-          <p className="text-sm font-medium text-white">{label}</p>
+          <p className="text-sm font-medium text-white">{formatDate(dateStr)}</p>
         </div>
 
         <div className="space-y-1.5">
@@ -155,29 +189,33 @@ export function AssetChart({ records }: AssetChartProps) {
   return (
     <div className="bg-slate-900/60 rounded-[2rem] p-8 space-y-8 border border-white/5 relative overflow-hidden">
       {/* 标题 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h3 className="text-lg font-bold text-white">资产曲线</h3>
           <p className="text-sm text-slate-400">可视化展示随时间累积的投入与盈利区间</p>
         </div>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+            <span className="w-8 border-t-2 border-dashed border-blue-500 rounded" />
             <span className="text-xs font-bold text-slate-400">投入本金</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-[#f87171] shadow-[0_0_8px_rgba(248,113,113,0.5)]" />
             <span className="text-xs font-bold text-slate-400">盈利区间</span>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-[#4ade80] shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
+            <span className="text-xs font-bold text-slate-400">亏损区间</span>
+          </div>
         </div>
       </div>
 
       {/* 图表 */}
-      <div className="h-48 w-full">
+      <div className="h-48 w-full relative">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={chartData}
-            margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
+            margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
           >
             <defs>
               {/* 盈利区域渐变 - 红色 */}
@@ -191,19 +229,24 @@ export function AssetChart({ records }: AssetChartProps) {
                 <stop offset="100%" stopColor={LOSS_COLOR} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
+            <CartesianGrid vertical={false} stroke="rgba(148, 163, 184, 0.08)" />
             <XAxis
-              dataKey="date"
-              tickFormatter={formatXAxis}
-              tick={{ fontSize: 12, fill: "#94a3b8" }}
+              dataKey="ts"
+              type="number"
+              domain={["dataMin", "dataMax"]}
+              scale="time"
+              ticks={tickValues}
+              tickFormatter={() => ""}
+              tick={{ fontSize: 1, fill: "transparent" }}
+              tickLine={false}
               axisLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
-              tickLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: "#94a3b8" }}
+              tick={{ fontSize: 11, fill: "#64748b" }}
               tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
               axisLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
               tickLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
+              width={50}
             />
             <Tooltip content={<CustomTooltip />} />
 
@@ -246,6 +289,18 @@ export function AssetChart({ records }: AssetChartProps) {
             />
           </AreaChart>
         </ResponsiveContainer>
+
+        {/* 日期标签 - 独立于图表渲染，与图表绘图区域对齐 */}
+        {tickValues.length === 2 && (
+          <>
+            <div className="absolute left-[50px] bottom-0 text-[11px] text-slate-500">
+              {formatXAxis(tickValues[0])}
+            </div>
+            <div className="absolute right-0 bottom-0 text-[11px] text-slate-500">
+              {formatXAxis(tickValues[1])}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
