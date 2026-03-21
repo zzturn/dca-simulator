@@ -11,6 +11,75 @@ interface DateSegmentInputProps {
   label?: string;
 }
 
+// 将 Segment 组件移到外部，避免每次渲染时重新创建
+interface SegmentProps {
+  type: "year" | "month" | "day";
+  val: number;
+  width: string;
+  isEditing: boolean;
+  editValue: string;
+  onStartEdit: (type: "year" | "month" | "day", e: React.MouseEvent) => void;
+  onInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur: () => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+}
+
+function Segment({
+  type,
+  val,
+  width,
+  isEditing,
+  editValue,
+  onStartEdit,
+  onInput,
+  onBlur,
+  onKeyDown,
+}: SegmentProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const display = String(val).padStart(type === "year" ? 4 : 2, "0");
+
+  // 自动聚焦
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  return (
+    <div
+      data-segment={type}
+      onClick={(e) => !isEditing && onStartEdit(type, e)}
+      className={cn(
+        "flex items-center justify-center rounded transition-colors",
+        isEditing ? "bg-slate-800 px-0.5" : "px-0.5 hover:bg-slate-800/50 cursor-text"
+      )}
+    >
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          value={editValue}
+          onChange={onInput}
+          onBlur={onBlur}
+          onKeyDown={onKeyDown}
+          className={cn(
+            "bg-transparent text-white text-sm font-semibold text-center outline-none",
+            width
+          )}
+          style={{ caretColor: "#60a5fa" }}
+          maxLength={type === "year" ? 4 : 2}
+        />
+      ) : (
+        <span className={cn("text-sm font-semibold text-white select-none", width)}>
+          {display}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function DateSegmentInput({
   value,
   onChange,
@@ -26,7 +95,6 @@ export function DateSegmentInput({
 
   const [editingSegment, setEditingSegment] = useState<"year" | "month" | "day" | null>(null);
   const [editValue, setEditValue] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   // 获取月份的最大天数
@@ -54,45 +122,35 @@ export function DateSegmentInput({
   }, [min, max, onChange, getDaysInMonth]);
 
   // 开始编辑
-  const startEdit = (segment: "year" | "month" | "day", e: React.MouseEvent) => {
+  const startEdit = useCallback((segment: "year" | "month" | "day", e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingSegment(segment);
     setEditValue(segment === "year" ? String(year) : String(segment === "month" ? month : day));
-  };
+  }, [year, month, day]);
 
   // 完成编辑
-  const finishEdit = () => {
+  const finishEdit = useCallback(() => {
     if (editingSegment) {
       const num = parseInt(editValue) || 0;
       if (editingSegment === "year") {
-        updateDate(num, month, day);
+        updateDate(num || year, month, day);
       } else if (editingSegment === "month") {
-        updateDate(year, num, day);
+        updateDate(year, num || month, day);
       } else {
-        updateDate(year, month, num);
+        updateDate(year, month, num || day);
       }
     }
     setEditingSegment(null);
-  };
+  }, [editingSegment, editValue, year, month, day, updateDate]);
 
-  // 处理输入
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 处理输入 - 只更新本地状态
+  const handleInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, "");
     setEditValue(val);
-
-    // 实时更新（可选）
-    const num = parseInt(val) || 0;
-    if (editingSegment === "year") {
-      updateDate(num || year, month, day);
-    } else if (editingSegment === "month") {
-      updateDate(year, num || month, day);
-    } else if (editingSegment === "day") {
-      updateDate(year, month, num || day);
-    }
-  };
+  }, []);
 
   // 键盘事件
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       finishEdit();
     } else if (e.key === "Escape") {
@@ -113,23 +171,8 @@ export function DateSegmentInput({
       }
 
       setEditValue(String(newVal));
-      if (editingSegment === "year") {
-        updateDate(newVal, month, day);
-      } else if (editingSegment === "month") {
-        updateDate(year, newVal, day);
-      } else {
-        updateDate(year, month, newVal);
-      }
     }
-  };
-
-  // 自动聚焦
-  useEffect(() => {
-    if (editingSegment && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [editingSegment]);
+  }, [editingSegment, editValue, year, month, getDaysInMonth, finishEdit]);
 
   // 点击空白区域显示日历
   const handleContainerClick = (e: React.MouseEvent) => {
@@ -137,53 +180,6 @@ export function DateSegmentInput({
     if (!target.closest("[data-segment]")) {
       dateInputRef.current?.click();
     }
-  };
-
-  // 渲染数字段
-  const Segment = ({
-    type,
-    val,
-    width,
-  }: {
-    type: "year" | "month" | "day";
-    val: number;
-    width: string;
-  }) => {
-    const isEditing = editingSegment === type;
-    const display = String(val).padStart(type === "year" ? 4 : 2, "0");
-
-    return (
-      <div
-        data-segment={type}
-        onClick={(e) => !isEditing && startEdit(type, e)}
-        className={cn(
-          "flex items-center justify-center rounded transition-colors",
-          isEditing ? "bg-slate-800 px-0.5" : "px-0.5 hover:bg-slate-800/50 cursor-text"
-        )}
-      >
-        {isEditing ? (
-          <input
-            ref={inputRef}
-            type="text"
-            inputMode="numeric"
-            value={editValue}
-            onChange={handleInput}
-            onBlur={finishEdit}
-            onKeyDown={handleKeyDown}
-            className={cn(
-              "bg-transparent text-white text-sm font-semibold text-center outline-none",
-              width
-            )}
-            style={{ caretColor: "#60a5fa" }}
-            maxLength={type === "year" ? 4 : 2}
-          />
-        ) : (
-          <span className={cn("text-sm font-semibold text-white select-none", width)}>
-            {display}
-          </span>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -200,11 +196,41 @@ export function DateSegmentInput({
         )}
       >
         <div className="flex items-center gap-0.5">
-          <Segment type="year" val={year} width="w-9" />
+          <Segment
+            type="year"
+            val={year}
+            width="w-9"
+            isEditing={editingSegment === "year"}
+            editValue={editValue}
+            onStartEdit={startEdit}
+            onInput={handleInput}
+            onBlur={finishEdit}
+            onKeyDown={handleKeyDown}
+          />
           <span className="text-slate-500 text-sm font-bold">/</span>
-          <Segment type="month" val={month} width="w-4" />
+          <Segment
+            type="month"
+            val={month}
+            width="w-4"
+            isEditing={editingSegment === "month"}
+            editValue={editValue}
+            onStartEdit={startEdit}
+            onInput={handleInput}
+            onBlur={finishEdit}
+            onKeyDown={handleKeyDown}
+          />
           <span className="text-slate-500 text-sm font-bold">/</span>
-          <Segment type="day" val={day} width="w-4" />
+          <Segment
+            type="day"
+            val={day}
+            width="w-4"
+            isEditing={editingSegment === "day"}
+            editValue={editValue}
+            onStartEdit={startEdit}
+            onInput={handleInput}
+            onBlur={finishEdit}
+            onKeyDown={handleKeyDown}
+          />
         </div>
         <div
           className="relative flex items-center"
