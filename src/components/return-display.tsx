@@ -14,13 +14,25 @@ interface ReturnDisplayProps {
 export function ReturnDisplay({ result, className }: ReturnDisplayProps) {
   if (!result) {
     return (
-      <div className={cn("card-professional p-8 text-center", className)}>
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <Target className="w-5 h-5 text-slate-400" />
-          <span className="text-slate-500">等待模拟</span>
+      <div
+        className={cn(
+          "glass-panel rounded-[2rem] p-10 relative overflow-hidden",
+          className
+        )}
+      >
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">累计收益率</h3>
+            <div className="text-7xl font-black text-slate-500 tracking-tight">--%</div>
+          </div>
+          <div className="flex flex-col justify-center items-end space-y-2 text-right">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">累计收益</h3>
+            <div className="text-4xl font-bold text-slate-400">--</div>
+            <div className="text-xs text-slate-500 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full font-medium">
+              等待模拟
+            </div>
+          </div>
         </div>
-        <div className="text-6xl font-bold font-number text-slate-300">--%</div>
-        <p className="text-slate-400 mt-3 text-sm">配置定投参数后查看收益</p>
       </div>
     );
   }
@@ -28,60 +40,68 @@ export function ReturnDisplay({ result, className }: ReturnDisplayProps) {
   const isProfit = result.profit >= 0;
 
   return (
-    <div className={cn(
-      "card-professional p-8 text-center",
-      isProfit && "bg-gradient-to-br from-red-50 to-orange-50/50 border-red-100",
-      !isProfit && "bg-gradient-to-br from-emerald-50 to-teal-50/50 border-emerald-100",
-      className
-    )}>
-      {/* 标签 */}
-      <div className="flex items-center justify-center gap-2 mb-4">
-        <div className={cn(
-          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium",
-          isProfit ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-600"
-        )}>
-          {isProfit ? (
-            <TrendingUp className="w-4 h-4" />
-          ) : (
-            <TrendingDown className="w-4 h-4" />
-          )}
-          <span>模拟定投收益率</span>
-        </div>
-      </div>
-
-      {/* 收益率大字报 */}
+    <div
+      className={cn(
+        "glass-panel rounded-[2rem] p-10 relative overflow-hidden",
+        isProfit ? "border-profit/20" : "border-loss/20",
+        className
+      )}
+    >
+      {/* 装饰性发光 */}
       <div
         className={cn(
-          "text-7xl sm:text-8xl font-extrabold font-number",
-          isProfit ? "text-red-500" : "text-emerald-500"
+          "absolute -top-24 -right-24 w-64 h-64 rounded-full blur-3xl",
+          isProfit ? "bg-blue-500/10" : "bg-green-500/10"
         )}
-      >
-        <AnimatedNumber
-          value={result.profitRate * 100}
-          decimals={2}
-          prefix={isProfit ? "+" : ""}
-          suffix="%"
-          duration={800}
-        />
-      </div>
+      />
+      <div
+        className={cn(
+          "absolute -bottom-24 -left-24 w-64 h-64 rounded-full blur-3xl",
+          isProfit ? "bg-[#f87171]/5" : "bg-[#4ade80]/5"
+        )}
+      />
 
-      {/* 累计收益 */}
-      <div className="mt-6 flex items-center justify-center gap-2">
-        <span className="text-slate-500">累计收益</span>
-        <span
-          className={cn(
-            "text-xl font-bold font-number",
-            isProfit ? "text-red-500" : "text-emerald-500"
-          )}
-        >
-          <AnimatedNumber
-            value={result.profit}
-            decimals={2}
-            prefix={isProfit ? "+" : ""}
-            formatFn={(val) => formatCurrency(val).replace("¥", "¥ ")}
-            duration={800}
-          />
-        </span>
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-10">
+        {/* 左侧：累计收益率 */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">累计收益率</h3>
+          <div
+            className={cn(
+              "text-7xl font-black tracking-tight",
+              isProfit ? "text-[#f87171]" : "text-[#4ade80]"
+            )}
+            style={{
+              textShadow: isProfit
+                ? "0 0 40px rgba(248, 113, 113, 0.4)"
+                : "0 0 40px rgba(74, 222, 128, 0.4)",
+            }}
+          >
+            <AnimatedNumber
+              value={result.profitRate * 100}
+              decimals={2}
+              prefix={isProfit ? "+" : ""}
+              suffix="%"
+              duration={800}
+            />
+          </div>
+        </div>
+
+        {/* 右侧：累计收益 */}
+        <div className="flex flex-col justify-center items-end space-y-2 text-right">
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">累计收益</h3>
+          <div className="text-4xl font-bold text-white">
+            <AnimatedNumber
+              value={result.profit}
+              decimals={2}
+              prefix={result.profit >= 0 ? "+¥ " : "-¥ "}
+              formatFn={(val) => Math.abs(val).toLocaleString("zh-CN", { minimumFractionDigits: 2 })}
+              duration={800}
+            />
+          </div>
+          <div className="text-xs text-slate-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full font-medium">
+            截至 {result.endDate}
+          </div>
+        </div>
       </div>
     </div>
   );

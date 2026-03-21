@@ -32,7 +32,7 @@ export function CalendarMatrix({
   };
 
   return (
-    <div className={cn("calendar-matrix", className)}>
+    <div className={cn("grid grid-cols-7 gap-1", className)}>
       {days.map((day) => {
         const isSelected = selectedDays.includes(day);
         return (
@@ -41,8 +41,10 @@ export function CalendarMatrix({
             type="button"
             onClick={() => handleDayClick(day)}
             className={cn(
-              "calendar-day",
-              isSelected && "selected"
+              "w-full aspect-square flex items-center justify-center text-xs font-bold rounded-lg cursor-pointer transition-all duration-150",
+              isSelected
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
+                : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-white/5"
             )}
             aria-pressed={isSelected}
           >
@@ -62,11 +64,11 @@ interface WeekDaySelectorProps {
 }
 
 const WEEKDAYS = [
-  { value: 1, label: "一" },
-  { value: 2, label: "二" },
-  { value: 3, label: "三" },
-  { value: 4, label: "四" },
-  { value: 5, label: "五" },
+  { value: 1, label: "周一" },
+  { value: 2, label: "周二" },
+  { value: 3, label: "周三" },
+  { value: 4, label: "周四" },
+  { value: 5, label: "周五" },
 ];
 
 export function WeekDaySelector({
@@ -75,7 +77,7 @@ export function WeekDaySelector({
   className,
 }: WeekDaySelectorProps) {
   return (
-    <div className={cn("flex gap-2", className)}>
+    <div className={cn("flex flex-wrap gap-2", className)}>
       {WEEKDAYS.map((day) => {
         const isSelected = selectedDay === day.value;
         return (
@@ -84,14 +86,14 @@ export function WeekDaySelector({
             type="button"
             onClick={() => onChange(day.value)}
             className={cn(
-              "flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-150",
+              "px-3 py-1.5 text-xs font-bold rounded-lg border transition-all",
               isSelected
-                ? "bg-primary text-white"
-                : "bg-gray-100 text-text-2 hover:bg-gray-200"
+                ? "border-blue-500/30 bg-blue-600/20 text-blue-400"
+                : "border-white/5 bg-slate-800 text-slate-400 hover:bg-slate-700"
             )}
             aria-pressed={isSelected}
           >
-            周{day.label}
+            {day.label}
           </button>
         );
       })}

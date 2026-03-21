@@ -1,10 +1,9 @@
 "use client";
 
-import { Play, Info, AlertCircle, Settings } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Info, AlertCircle, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SegmentedControl } from "./ui/segmented-control";
-import { Stepper } from "./ui/stepper";
-import { CalendarMatrix, WeekDaySelector } from "./ui/calendar-matrix";
+import { CalendarMatrix } from "./ui/calendar-matrix";
 import {
   Tooltip,
   TooltipContent,
@@ -32,96 +31,201 @@ export function StrategyConfig({
   maxDate,
   error,
 }: StrategyConfigProps) {
+  const [isEditingAmount, setIsEditingAmount] = useState(false);
+  const amountInputRef = useRef<HTMLInputElement>(null);
+
   const updateConfig = (updates: Partial<DCAConfig>) => {
     onConfigChange({ ...config, ...updates });
   };
 
+  // 当进入编辑模式时，聚焦输入框并选中所有文字
+  useEffect(() => {
+    if (isEditingAmount && amountInputRef.current) {
+      amountInputRef.current.focus();
+      amountInputRef.current.select();
+    }
+  }, [isEditingAmount]);
+
+  // 格式化金额显示（添加千分位）
+  const formatAmount = (amount: number) => {
+    return amount.toLocaleString("zh-CN");
+  };
+
+  // 处理金额输入框失焦
+  const handleAmountBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value.replace(/[^\d]/g, "")) || 0;
+    updateConfig({ amount: Math.max(100, Math.min(100000, value)) });
+    setIsEditingAmount(false);
+  };
+
+  // 处理金额输入框键盘事件
+  const handleAmountKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.currentTarget.blur();
+    } else if (e.key === "Escape") {
+      setIsEditingAmount(false);
+    }
+  };
+
+  // 将日期格式从 YYYY-MM-DD 转换为 YYYY/MM/DD 格式显示
+  const formatDateDisplay = (dateStr: string) => {
+    if (!dateStr) return "";
+    return dateStr.replace(/-/g, "/");
+  };
+
   return (
-    <div className="card-professional p-6 space-y-6">
-      {/* 标题 */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-xl bg-slate-100 text-slate-600">
-          <Settings className="w-5 h-5" />
-        </div>
-        <h3 className="text-lg font-semibold text-slate-900">定投策略配置</h3>
-      </div>
-
+    <div className="space-y-6">
       {/* 定投频率 */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-slate-700">定投频率</label>
-        <SegmentedControl
-          options={[
-            { value: "monthly", label: "每月" },
-            { value: "weekly", label: "每周" },
-            { value: "daily", label: "每天" },
-          ]}
-          value={config.frequency}
-          onChange={(value: "monthly" | "weekly" | "daily") =>
-            updateConfig({ frequency: value })
-          }
-        />
+      <div className="space-y-4">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">定投频率</label>
+        <div className="flex gap-1 p-1 bg-slate-950 rounded-2xl border border-white/5">
+          <button
+            type="button"
+            onClick={() => updateConfig({ frequency: "daily" })}
+            className={cn(
+              "flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all",
+              config.frequency === "daily"
+                ? "bg-blue-600 text-white shadow-lg"
+                : "text-slate-400 hover:text-white"
+            )}
+          >
+            每天
+          </button>
+          <button
+            type="button"
+            onClick={() => updateConfig({ frequency: "weekly" })}
+            className={cn(
+              "flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all",
+              config.frequency === "weekly"
+                ? "bg-blue-600 text-white shadow-lg"
+                : "text-slate-400 hover:text-white"
+            )}
+          >
+            每周
+          </button>
+          <button
+            type="button"
+            onClick={() => updateConfig({ frequency: "monthly" })}
+            className={cn(
+              "flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all",
+              config.frequency === "monthly"
+                ? "bg-blue-600 text-white shadow-lg"
+                : "text-slate-400 hover:text-white"
+            )}
+          >
+            每月
+          </button>
+        </div>
+
+        {/* 定投日选择 - 每天定投时不显示 */}
+        {config.frequency !== "daily" && (
+          <div className="space-y-2">
+            <span className="text-[10px] font-bold text-slate-500 uppercase ml-1">定投日选择</span>
+            {config.frequency === "weekly" ? (
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 1, label: "周一" },
+                  { value: 2, label: "周二" },
+                  { value: 3, label: "周三" },
+                  { value: 4, label: "周四" },
+                  { value: 5, label: "周五" },
+                ].map((day) => (
+                  <button
+                    key={day.value}
+                    type="button"
+                    onClick={() => updateConfig({ dayOfWeek: day.value })}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-bold rounded-lg border transition-all",
+                      config.dayOfWeek === day.value
+                        ? "border-blue-500/30 bg-blue-600/20 text-blue-400"
+                        : "border-white/5 bg-slate-800 text-slate-400 hover:bg-slate-700"
+                    )}
+                  >
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <CalendarMatrix
+                selectedDays={config.dayOfMonth ? [config.dayOfMonth] : [1]}
+                onChange={(days) => updateConfig({ dayOfMonth: days[0] })}
+                mode="single"
+                maxDays={28}
+              />
+            )}
+          </div>
+        )}
       </div>
 
-      {/* 定投日期 - 每天定投时不显示 */}
-      {config.frequency !== "daily" && (
-        <div className="space-y-3">
-          <label className="text-sm font-medium text-slate-700">
-            {config.frequency === "monthly" ? "每月定投日" : "每周定投日"}
-          </label>
-          {config.frequency === "monthly" ? (
-            <CalendarMatrix
-              selectedDays={config.dayOfMonth ? [config.dayOfMonth] : [1]}
-              onChange={(days) => updateConfig({ dayOfMonth: days[0] })}
-              mode="single"
-              maxDays={28}
+      {/* 定投金额 - 可点击编辑的文字样式 */}
+      <div className="space-y-3">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">每期定投金额</label>
+        <div className="flex items-baseline gap-1">
+          <span className="text-slate-400">¥</span>
+          {isEditingAmount ? (
+            <input
+              ref={amountInputRef}
+              type="text"
+              defaultValue={config.amount}
+              onBlur={handleAmountBlur}
+              onKeyDown={handleAmountKeyDown}
+              className="bg-transparent border-none outline-none text-2xl font-bold text-white min-w-[80px] caret-blue-400"
+              style={{ caretColor: "#60a5fa" }}
             />
           ) : (
-            <WeekDaySelector
-              selectedDay={config.dayOfWeek || 1}
-              onChange={(day) => updateConfig({ dayOfWeek: day })}
-            />
+            <button
+              type="button"
+              onClick={() => setIsEditingAmount(true)}
+              className="group flex items-center gap-1 text-2xl font-bold text-white hover:text-blue-400 transition-colors"
+            >
+              {formatAmount(config.amount)}
+              <Pencil className="w-4 h-4 text-slate-500 group-hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all" />
+            </button>
           )}
         </div>
-      )}
-
-      {/* 定投金额 */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-slate-700">每次定投金额</label>
-        <Stepper
-          value={config.amount}
-          onChange={(value) => updateConfig({ amount: value })}
-          min={100}
-          max={100000}
-          step={100}
-          quickAmounts={[500, 1000, 5000]}
-        />
       </div>
 
-      {/* 日期范围 */}
+      {/* 日期范围 - YYYY/MM/DD 格式 */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-slate-700">投资日期范围</label>
-        <div className="grid grid-cols-2 gap-3">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">模拟周期</label>
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <span className="text-xs text-slate-500">开始日期</span>
-            <input
-              type="date"
-              value={config.startDate}
-              onChange={(e) => updateConfig({ startDate: e.target.value })}
-              min={minDate}
-              max={config.endDate}
-              className="input-glass"
-            />
+            <span className="text-[10px] font-bold text-slate-500 uppercase ml-1">开始日期</span>
+            <div className="relative">
+              <input
+                type="date"
+                value={config.startDate}
+                onChange={(e) => updateConfig({ startDate: e.target.value })}
+                min={minDate}
+                max={config.endDate}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <div className="w-full bg-slate-950 border border-white/10 rounded-xl py-3 px-3 text-sm font-semibold text-white hover:border-white/20 transition-all cursor-pointer flex items-center justify-between">
+                <span>{formatDateDisplay(config.startDate)}</span>
+                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
           </div>
           <div className="space-y-1.5">
-            <span className="text-xs text-slate-500">结束日期</span>
-            <input
-              type="date"
-              value={config.endDate}
-              onChange={(e) => updateConfig({ endDate: e.target.value })}
-              min={config.startDate}
-              max={maxDate}
-              className="input-glass"
-            />
+            <span className="text-[10px] font-bold text-slate-500 uppercase ml-1">结束日期</span>
+            <div className="relative">
+              <input
+                type="date"
+                value={config.endDate}
+                onChange={(e) => updateConfig({ endDate: e.target.value })}
+                min={config.startDate}
+                max={maxDate}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <div className="w-full bg-slate-950 border border-white/10 rounded-xl py-3 px-3 text-sm font-semibold text-white hover:border-white/20 transition-all cursor-pointer flex items-center justify-between">
+                <span>{formatDateDisplay(config.endDate)}</span>
+                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -130,19 +234,19 @@ export function StrategyConfig({
       {config.frequency !== "daily" && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-700">非交易日处理</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">非交易日处理</label>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Info className="w-4 h-4 text-slate-400 cursor-help" />
+                  <Info className="w-4 h-4 text-slate-500 cursor-help" />
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="text-sm">
+                <TooltipContent className="max-w-xs glass-panel">
+                  <p className="text-sm text-on-surface">
                     当定投日遇到周末或节假日时：
                     <br />
-                    <strong className="text-blue-600">顺延</strong>：在下一个交易日执行买入
+                    <strong className="text-blue-400">顺延</strong>：在下一个交易日执行买入
                     <br />
-                    <strong className="text-blue-600">跳过</strong>：跳过本次定投
+                    <strong className="text-blue-400">跳过</strong>：跳过本次定投
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -151,10 +255,10 @@ export function StrategyConfig({
           <div className="flex gap-3">
             <label
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200",
+                "flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 border-2",
                 config.nonTradeDayRule === "next"
-                  ? "bg-blue-50 border-2 border-blue-400 text-blue-600"
-                  : "bg-slate-50 border-2 border-transparent text-slate-600 hover:border-slate-200"
+                  ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                  : "bg-slate-800/50 border-transparent text-slate-400 hover:border-white/10"
               )}
             >
               <input
@@ -169,8 +273,8 @@ export function StrategyConfig({
                 className={cn(
                   "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors",
                   config.nonTradeDayRule === "next"
-                    ? "border-blue-500 bg-blue-500"
-                    : "border-slate-300"
+                    ? "border-blue-400 bg-blue-400"
+                    : "border-slate-500"
                 )}
               >
                 {config.nonTradeDayRule === "next" && (
@@ -182,10 +286,10 @@ export function StrategyConfig({
 
             <label
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200",
+                "flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 border-2",
                 config.nonTradeDayRule === "skip"
-                  ? "bg-blue-50 border-2 border-blue-400 text-blue-600"
-                  : "bg-slate-50 border-2 border-transparent text-slate-600 hover:border-slate-200"
+                  ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                  : "bg-slate-800/50 border-transparent text-slate-400 hover:border-white/10"
               )}
             >
               <input
@@ -200,8 +304,8 @@ export function StrategyConfig({
                 className={cn(
                   "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors",
                   config.nonTradeDayRule === "skip"
-                    ? "border-blue-500 bg-blue-500"
-                    : "border-slate-300"
+                    ? "border-blue-400 bg-blue-400"
+                    : "border-slate-500"
                 )}
               >
                 {config.nonTradeDayRule === "skip" && (
@@ -216,12 +320,12 @@ export function StrategyConfig({
 
       {/* 错误提示 */}
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-100">
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-red-600 font-medium">模拟计算失败</p>
-              <p className="text-sm text-red-500/80 mt-1">{error}</p>
+              <p className="text-red-300 font-medium">模拟计算失败</p>
+              <p className="text-sm text-red-400/80 mt-1">{error}</p>
             </div>
           </div>
         </div>
@@ -230,12 +334,10 @@ export function StrategyConfig({
       {/* 开始模拟按钮 */}
       <button
         className={cn(
-          "w-full h-12 text-base font-medium rounded-xl",
-          "bg-blue-500 text-white",
-          "transition-all duration-200",
-          "hover:bg-blue-600 active:scale-[0.99]",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
-          "flex items-center justify-center gap-2"
+          "w-full py-5 bg-blue-600 text-white text-lg font-extrabold rounded-2xl shadow-xl shadow-blue-900/40",
+          "hover:bg-blue-500 hover:scale-[1.02] active:scale-95 transition-all",
+          "flex items-center justify-center gap-3",
+          "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100"
         )}
         onClick={onSimulate}
         disabled={isLoading || config.amount <= 0}
@@ -250,7 +352,12 @@ export function StrategyConfig({
           </span>
         ) : (
           <>
-            <Play className="w-5 h-5" />
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3v18h18" />
+              <path d="M18 17V9" />
+              <path d="M13 17V5" />
+              <path d="M8 17v-3" />
+            </svg>
             开始模拟
           </>
         )}

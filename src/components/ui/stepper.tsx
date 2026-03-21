@@ -64,9 +64,9 @@ export function Stepper({
             onChange={handleInputChange}
             min={min}
             max={max}
-            className="w-full text-center text-2xl font-bold font-number text-text-1 bg-transparent border-none outline-none"
+            className="w-full text-center text-2xl font-bold font-number text-on-surface bg-transparent border-none outline-none"
           />
-          <span className="text-sm text-text-3">元/次</span>
+          <span className="text-sm text-on-surface-muted">元/次</span>
         </div>
 
         <button

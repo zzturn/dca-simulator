@@ -10,85 +10,53 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // 主色调
+        // Material Design 3 风格色彩系统 - 深色主题
+        surface: {
+          DEFAULT: "#0f172a",
+          dim: "#020617",
+          bright: "#1e293b",
+          container: "#1e293b",
+          "container-high": "#334155",
+        },
         primary: {
-          DEFAULT: "#3B82F6",
-          50: "#EFF6FF",
-          100: "#DBEAFE",
-          200: "#BFDBFE",
-          300: "#93C5FD",
-          400: "#60A5FA",
-          500: "#3B82F6",
-          600: "#2563EB",
-          700: "#1D4ED8",
-          800: "#1E40AF",
-          900: "#1E3A8A",
-        },
-        // 财富金
-        wealth: {
-          DEFAULT: "#F59E0B",
-          50: "#FFFBEB",
-          100: "#FEF3C7",
-          200: "#FDE68A",
-          300: "#FCD34D",
-          400: "#FBBF24",
-          500: "#F59E0B",
-          600: "#D97706",
-          700: "#B45309",
-          800: "#92400E",
-          900: "#78350F",
-        },
-        // 金融色 - 遵循中国股市惯例
-        profit: {
-          DEFAULT: "#EF4444",
-          light: "#F87171",
-          dark: "#DC2626",
-        },
-        loss: {
-          DEFAULT: "#10B981",
-          light: "#34D399",
-          dark: "#059669",
-        },
-        // 文字层级
-        "text-1": "#1F2937",
-        "text-2": "#4B5563",
-        "text-3": "#9CA3AF",
-        "text-4": "#D1D5DB",
-        // 背景与边框
-        "app-bg": "#F8FAFC",
-        "card-bg": "#FFFFFF",
-        "border-default": "#E5E6EB",
-        // 原有 shadcn 兼容色
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: "#60a5fa",
+          container: "#1e3a5f",
+          "on-container": "#bfdbfe",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: "#a78bfa",
+          container: "#2e1065",
+          "on-container": "#ddd6fe",
         },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+        tertiary: {
+          DEFAULT: "#2dd4bf",
+          container: "#134e4a",
+          "on-container": "#5eead4",
         },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+        // 金融色 - 中国股市惯例
+        profit: {
+          DEFAULT: "#ef4444",
+          light: "#fca5a5",
+          dark: "#b91c1c",
+          container: "#450a0a",
         },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+        loss: {
+          DEFAULT: "#22c55e",
+          light: "#86efac",
+          dark: "#15803d",
+          container: "#052e16",
         },
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        warning: "#F59E0B",
+        // 文字层级
+        "on-surface": "#f1f5f9",
+        "on-surface-variant": "#94a3b8",
+        "on-surface-muted": "#64748b",
+        outline: "#475569",
+        "outline-variant": "#334155",
+        // 嬰皮玻璃材质 - 深色主题
+        "glass-surface": {
+          DEFAULT: "rgba(30, 41, 59, 0.6)",
+          hover: "rgba(51, 65, 85, 0.8)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -96,10 +64,16 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
         "2xl": "16px",
         "3xl": "24px",
+        "4xl": "32px",
       },
       boxShadow: {
-        "card": "0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03)",
-        "card-hover": "0 4px 12px rgba(0, 0, 0, 0.08)",
+        "glass": "0 8px 32px rgba(0, 0, 0, 0.3)",
+        "glass-lg": "0 12px 48px rgba(0, 0, 0, 0.4)",
+        "glow-profit": "0 0 40px rgba(239, 68, 68, 0.3)",
+        "glow-loss": "0 0 40px rgba(34, 197, 94, 0.3)",
+        "glow-primary": "0 0 40px rgba(96, 165, 250, 0.3)",
+        "card": "0 1px 3px rgba(0, 0, 0, 0.1)",
+        "card-hover": "0 8px 24px rgba(0, 0, 0, 0.2)",
       },
       fontFamily: {
         sans: ["Inter", "PingFang SC", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
@@ -112,9 +86,15 @@ const config: Config = {
         "body": ["14px", { lineHeight: "1.5", fontWeight: "400" }],
         "caption": ["12px", { lineHeight: "1.4", fontWeight: "400" }],
       },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+        "mesh-gradient": "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
+      },
       animation: {
-        "fade-in": "fadeIn 0.2s ease-out",
-        "slide-up": "slideUp 0.3s ease-out",
+        "fade-in": "fadeIn 0.3s ease-out",
+        "slide-up": "slideUp 0.4s ease-out",
+        "pulse-glow": "pulseGlow 2s ease-in-out infinite",
       },
       keyframes: {
         fadeIn: {
@@ -122,8 +102,12 @@ const config: Config = {
           "100%": { opacity: "1" },
         },
         slideUp: {
-          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "0%": { opacity: "0", transform: "translateY(20px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        pulseGlow: {
+          "0%, 100%": { opacity: "0.5" },
+          "50%": { opacity: "1" },
         },
       },
     },

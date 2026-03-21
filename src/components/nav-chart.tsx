@@ -15,7 +15,7 @@ import { Skeleton } from "./ui/skeleton";
 import type { NavPoint, InvestmentRecord, TimeRange, DCAConfig } from "@/lib/types";
 import { getTimeRangeStart } from "@/lib/date-utils";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { LineChart, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 
 interface NavChartProps {
   navHistory: NavPoint[];
@@ -27,11 +27,11 @@ interface NavChartProps {
 }
 
 const timeRangeOptions: { value: TimeRange; label: string }[] = [
-  { value: "all", label: "全部" },
-  { value: "5y", label: "5年" },
-  { value: "3y", label: "3年" },
+  { value: "6m", label: "6个月" },
   { value: "1y", label: "1年" },
-  { value: "6m", label: "6月" },
+  { value: "3y", label: "3年" },
+  { value: "5y", label: "5年" },
+  { value: "all", label: "全部" },
 ];
 
 // 创建自定义 Dot 渲染函数
@@ -75,33 +75,27 @@ export function NavChart({
     return startDate ? new Date(startDate).getTime() : null;
   }, [timeRange]);
 
-  // 投资日期集合（用于图表数据）- 每天定投时不显示买入点
+  // 投资日期集合
   const investDates = useMemo(() => {
-    // 每天定投时，不显示买入点（因为每天都有交易）
     if (frequency === "daily") return new Set<string>();
     return new Set(investRecords?.filter(r => r.amount > 0).map(r => r.date) || []);
   }, [investRecords, frequency]);
 
-  // 图表数据始终使用全部数据，添加时间戳字段（实现横向滑动效果）
-  // 同时确保投资日期的点被包含
+  // 图表数据
   const chartData = useMemo(() => {
     if (navHistory.length === 0) return [];
 
-    // 创建日期到数据点的映射
     const navMap = new Map(navHistory.map(p => [p.date, p]));
 
-    // 添加时间戳
     const withTs = navHistory.map(p => ({
       ...p,
       ts: new Date(p.date).getTime(),
     }));
 
-    // 数据量小，直接返回
     if (withTs.length <= 1000) {
       return withTs;
     }
 
-    // 均匀采样
     const sampleRate = Math.ceil(withTs.length / 1000);
     const sampled: (NavPoint & { ts: number })[] = [];
     for (let i = 0; i < withTs.length; i += sampleRate) {
@@ -112,7 +106,6 @@ export function NavChart({
       sampled.push(lastPoint);
     }
 
-    // 添加投资日期的点（确保红点能显示）
     const sampledDates = new Set(sampled.map(p => p.date));
     investDates.forEach((date) => {
       if (!sampledDates.has(date)) {
@@ -126,19 +119,18 @@ export function NavChart({
       }
     });
 
-    // 按时间戳排序
     sampled.sort((a, b) => a.ts - b.ts);
 
     return sampled;
   }, [navHistory, investDates]);
 
-  // XAxis domain - 控制显示范围（时间戳）
+  // XAxis domain
   const xAxisDomain = useMemo((): [number | string, number | string] => {
     if (timeRangeStartTs === null) return ["dataMin", "dataMax"];
     return [timeRangeStartTs, "dataMax"];
   }, [timeRangeStartTs]);
 
-  // 投资点数据（用于 Tooltip）
+  // 投资点数据
   const investPointsMap = useMemo(() => {
     const map = new Map<string, { amount: number; shares: number }>();
     investRecords?.forEach((r) => {
@@ -149,14 +141,14 @@ export function NavChart({
     return map;
   }, [investRecords]);
 
-  // 格式化X轴时间戳为日期
+  // 格式化X轴
   const formatXAxis = (ts: number) => {
     if (!ts) return "";
     const d = new Date(ts);
     return `${d.getMonth() + 1}/${d.getDate()}`;
   };
 
-  // 格式化时间戳为日期字符串（用于 Tooltip）
+  // 格式化时间戳
   const formatTimestamp = (ts: number) => {
     const d = new Date(ts);
     const year = d.getFullYear();
@@ -184,18 +176,15 @@ export function NavChart({
         shares?: number;
       };
     }>;
-    label?: number; // 时间戳
+    label?: number;
   }) => {
     if (!active || !payload || payload.length === 0) return null;
 
-    // 合并所有 payload 数据
     const allPayloads = payload.map((p) => p.payload).filter(Boolean);
     const firstPayload = allPayloads[0];
 
-    // 格式化日期（label 是时间戳）
     const dateStr = label ? formatTimestamp(label) : (firstPayload?.date || "");
 
-    // 检查是否是投资点
     const investRecord = firstPayload?.date
       ? investPointsMap.get(firstPayload.date)
       : dateStr
@@ -207,46 +196,44 @@ export function NavChart({
     const accumulatedValue = firstPayload?.accumulatedNav ?? payload.find((p) => p.dataKey === "accumulatedNav")?.value;
 
     return (
-      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-3 min-w-[180px]">
-        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
+      <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl p-3 min-w-[180px] border border-white/10">
+        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
           <Calendar className="w-4 h-4 text-slate-400" />
-          <p className="text-sm font-medium text-slate-900">{dateStr}</p>
+          <p className="text-sm font-medium text-white">{dateStr}</p>
         </div>
 
-        {/* 净值信息 */}
         <div className="space-y-1.5">
           {navValue !== undefined && (
             <div className="flex items-center justify-between gap-4">
-              <span className="text-sm text-slate-500">单位净值</span>
-              <span className="text-sm font-semibold text-blue-500">
+              <span className="text-sm text-slate-400">单位净值</span>
+              <span className="text-sm font-semibold text-blue-400">
                 {navValue.toFixed(4)}
               </span>
             </div>
           )}
           {accumulatedValue !== undefined && showAccumulated && (
             <div className="flex items-center justify-between gap-4">
-              <span className="text-sm text-slate-500">累计净值</span>
-              <span className="text-sm font-semibold text-amber-500">
+              <span className="text-sm text-slate-400">累计净值</span>
+              <span className="text-sm font-semibold text-amber-400">
                 {accumulatedValue.toFixed(4)}
               </span>
             </div>
           )}
         </div>
 
-        {/* 投资信息（如果是投资点） */}
         {isInvestPoint && investRecord && (
-          <div className="mt-2 pt-2 border-t border-slate-100">
-            <p className="text-xs font-medium text-red-500 mb-1.5">定投买入</p>
+          <div className="mt-2 pt-2 border-t border-white/10">
+            <p className="text-xs font-medium text-[#f87171] mb-1.5">定投买入</p>
             <div className="space-y-1">
               <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-slate-500">金额</span>
-                <span className="text-sm font-semibold text-red-500">
+                <span className="text-sm text-slate-400">金额</span>
+                <span className="text-sm font-semibold text-[#f87171]">
                   {formatCurrency(investRecord.amount)}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-slate-500">份额</span>
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm text-slate-400">份额</span>
+                <span className="text-sm font-medium text-slate-300">
                   {formatNumber(investRecord.shares, 2)}
                 </span>
               </div>
@@ -259,31 +246,29 @@ export function NavChart({
 
   if (isLoading) {
     return (
-      <div className="chart-container">
-        <Skeleton className="h-[400px] w-full rounded-xl" />
+      <div className="bg-slate-900/40 rounded-[2rem] p-8 border border-white/5 space-y-6">
+        <Skeleton className="h-6 w-24 rounded-lg" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="chart-container">
+    <div className="bg-slate-900/40 rounded-[2rem] p-8 border border-white/5 space-y-6 relative overflow-hidden">
       {/* 标题和时间切换 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-blue-50 text-blue-500">
-            <LineChart className="w-5 h-5" />
-          </div>
-          <h3 className="chart-title">净值走势</h3>
-        </div>
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+        <h3 className="text-lg font-bold text-white">净值走势</h3>
+        <div className="flex gap-1 p-1 bg-slate-950 rounded-xl border border-white/5">
           {timeRangeOptions.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => onTimeRangeChange(option.value)}
               className={cn(
-                "time-range-btn",
-                timeRange === option.value && "active"
+                "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
+                timeRange === option.value
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-slate-500 hover:text-white"
               )}
             >
               {option.label}
@@ -293,25 +278,27 @@ export function NavChart({
       </div>
 
       {/* 图表 */}
-      <div className="h-[350px]">
+      <div className="h-64 relative">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={chartData}
             margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
           >
             <defs>
-              {/* 净值线渐变填充 */}
-              <linearGradient id="navAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.2} />
-                <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
+              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
               </linearGradient>
-              {/* 累计净值渐变填充 */}
+              <linearGradient id="lineStroke" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0%" stopColor="#60a5fa" />
+                <stop offset="100%" stopColor="#3b82f6" />
+              </linearGradient>
               <linearGradient id="accNavAreaGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.15} />
                 <stop offset="100%" stopColor="#F59E0B" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
             <XAxis
               dataKey="ts"
               type="number"
@@ -320,15 +307,15 @@ export function NavChart({
               allowDataOverflow
               tickFormatter={formatXAxis}
               tick={{ fontSize: 12, fill: "#94a3b8" }}
-              axisLine={{ stroke: "#e2e8f0" }}
-              tickLine={{ stroke: "#e2e8f0" }}
+              axisLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
+              tickLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
             />
             <YAxis
               domain={["auto", "auto"]}
               tick={{ fontSize: 12, fill: "#94a3b8" }}
               tickFormatter={(v) => v.toFixed(2)}
-              axisLine={{ stroke: "#e2e8f0" }}
-              tickLine={{ stroke: "#e2e8f0" }}
+              axisLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
+              tickLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
             />
             <Tooltip content={<CustomTooltip />} />
 
@@ -337,15 +324,15 @@ export function NavChart({
               type="monotone"
               dataKey="nav"
               stroke="none"
-              fill="url(#navAreaGradient)"
+              fill="url(#chartGradient)"
               fillOpacity={1}
             />
 
-            {/* 单位净值线 - 带投资点标记 */}
+            {/* 单位净值线 */}
             <Area
               type="monotone"
               dataKey="nav"
-              stroke="#3B82F6"
+              stroke="url(#lineStroke)"
               strokeWidth={2}
               fill="none"
               dot={createCustomDot(investDates)}
@@ -378,12 +365,11 @@ export function NavChart({
       </div>
 
       {/* 图例 */}
-      <div className="mt-4 flex flex-wrap items-center gap-6 text-sm">
-        {/* 每天定投时不显示买入点图例 */}
+      <div className="flex flex-wrap items-center gap-6 text-sm relative z-10">
         {frequency !== "daily" && (
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500" />
-            <span className="text-slate-500">定投买入点</span>
+            <div className="w-3 h-3 rounded-full bg-[#f87171]" />
+            <span className="text-slate-400">定投买入点</span>
           </div>
         )}
         <label className="flex items-center gap-2 cursor-pointer group">
@@ -391,9 +377,9 @@ export function NavChart({
             type="checkbox"
             checked={showAccumulated}
             onChange={(e) => setShowAccumulated(e.target.checked)}
-            className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+            className="w-4 h-4 rounded border-slate-600 bg-transparent text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
           />
-          <span className="text-slate-500 group-hover:text-slate-700">显示累计净值</span>
+          <span className="text-slate-400 group-hover:text-slate-300">显示累计净值</span>
         </label>
       </div>
     </div>

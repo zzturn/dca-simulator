@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { AnimatedNumber } from "./ui/animated-number";
 import type { SimulationResult } from "@/lib/types";
 import { formatCurrency, formatPercent, formatNumber } from "@/lib/utils";
 import {
@@ -27,14 +26,14 @@ export function MetricsCards({ result }: MetricsCardsProps) {
       value: result.totalInvestment,
       format: (v: number) => formatCurrency(v),
       icon: Wallet,
-      iconBg: "bg-blue-50 text-blue-500",
+      iconBg: "bg-primary-container text-primary",
     },
     {
       label: "当前市值",
       value: result.currentValue,
       format: (v: number) => formatCurrency(v),
       icon: BarChart3,
-      iconBg: "bg-purple-50 text-purple-500",
+      iconBg: "bg-secondary-container text-secondary",
     },
     {
       label: "累计收益",
@@ -43,7 +42,7 @@ export function MetricsCards({ result }: MetricsCardsProps) {
       highlight: true,
       isProfit: isProfit,
       icon: DollarSign,
-      iconBg: isProfit ? "bg-red-50 text-red-500" : "bg-emerald-50 text-emerald-500",
+      iconBg: isProfit ? "bg-profit-container text-profit" : "bg-loss-container text-loss",
     },
     {
       label: "收益率",
@@ -52,7 +51,7 @@ export function MetricsCards({ result }: MetricsCardsProps) {
       highlight: true,
       isProfit: isProfit,
       icon: TrendingUp,
-      iconBg: isProfit ? "bg-red-50 text-red-500" : "bg-emerald-50 text-emerald-500",
+      iconBg: isProfit ? "bg-profit-container text-profit" : "bg-loss-container text-loss",
     },
     {
       label: "定投次数",
@@ -60,14 +59,14 @@ export function MetricsCards({ result }: MetricsCardsProps) {
       format: (v: number) => `${v}次`,
       integer: true,
       icon: Hash,
-      iconBg: "bg-indigo-50 text-indigo-500",
+      iconBg: "bg-tertiary-container text-tertiary",
     },
     {
       label: "平均成本",
       value: result.averageCost,
       format: (v: number) => formatNumber(v, 4),
       icon: Target,
-      iconBg: "bg-amber-50 text-amber-500",
+      iconBg: "bg-wealth/20 text-wealth",
     },
     {
       label: "最大回撤",
@@ -75,7 +74,7 @@ export function MetricsCards({ result }: MetricsCardsProps) {
       format: (v: number) => formatPercent(v),
       warning: true,
       icon: AlertTriangle,
-      iconBg: "bg-orange-50 text-orange-500",
+      iconBg: "bg-warning/20 text-warning",
     },
   ];
 
@@ -87,12 +86,12 @@ export function MetricsCards({ result }: MetricsCardsProps) {
           <div
             key={index}
             className={cn(
-              "metric-card group",
-              metric.highlight && isProfit && "bg-gradient-to-br from-red-50 to-orange-50/50 border-red-100",
-              metric.highlight && !isProfit && "bg-gradient-to-br from-emerald-50 to-teal-50/50 border-emerald-100",
-              metric.warning && "bg-gradient-to-br from-amber-50 to-yellow-50/50 border-amber-100"
+              "metric-card group relative overflow-hidden",
+              metric.highlight && isProfit && "bg-gradient-to-br from-profit-container/50 to-surface-container border-profit/20",
+              metric.highlight && !isProfit && "bg-gradient-to-br from-loss-container/50 to-surface-container border-loss/20",
+              metric.warning && "bg-gradient-to-br from-warning/10 to-surface-container border-warning/20"
             )}
-            style={{ animationDelay: `${index * 50}ms` }}
+            style={{ animationDelay: `${index * 50}ms` } as React.CSSProperties}
           >
             {/* 图标 */}
             <div className={cn(
@@ -109,9 +108,9 @@ export function MetricsCards({ result }: MetricsCardsProps) {
             <p
               className={cn(
                 "metric-value",
-                metric.highlight && isProfit && "text-red-500",
-                metric.highlight && !isProfit && "text-emerald-500",
-                metric.warning && "text-amber-600"
+                metric.highlight && isProfit && "text-profit-light",
+                metric.highlight && !isProfit && "text-loss-light",
+                metric.warning && "text-warning"
               )}
             >
               {metric.format(metric.value)}
