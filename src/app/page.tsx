@@ -127,6 +127,17 @@ export default function Home() {
     }, 50);
   }, [config, navHistory]);
 
+  // 从图表选中区间应用到定投配置
+  const handleApplyRange = useCallback((range: { startDate: string; endDate: string }) => {
+    setConfig((prev) => ({
+      ...prev,
+      startDate: range.startDate,
+      endDate: range.endDate,
+    }));
+    // 重置时间范围显示
+    setTimeRange("all");
+  }, []);
+
   const minDate = fundInfo?.establishDate;
   const maxDate = formatDate(new Date());
 
@@ -335,6 +346,7 @@ export default function Home() {
                   frequency={config.frequency}
                   timeRange={timeRange}
                   onTimeRangeChange={setTimeRange}
+                  onApplyRange={handleApplyRange}
                 />
 
                 {/* 资产曲线 */}

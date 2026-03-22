@@ -16,7 +16,12 @@ import { Skeleton } from "./ui/skeleton";
 import type { NavPoint, InvestmentRecord, TimeRange, DCAConfig } from "@/lib/types";
 import { getTimeRangeStart } from "@/lib/date-utils";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { Calendar, ZoomIn, RotateCcw } from "lucide-react";
+import { Calendar, ZoomIn, RotateCcw, Check } from "lucide-react";
+
+interface DateRange {
+  startDate: string;
+  endDate: string;
+}
 
 interface NavChartProps {
   navHistory: NavPoint[];
@@ -24,6 +29,7 @@ interface NavChartProps {
   frequency: DCAConfig["frequency"];
   timeRange: TimeRange;
   onTimeRangeChange: (range: TimeRange) => void;
+  onApplyRange?: (range: DateRange) => void;
   isLoading?: boolean;
 }
 
@@ -66,6 +72,7 @@ export function NavChart({
   frequency,
   timeRange,
   onTimeRangeChange,
+  onApplyRange,
   isLoading,
 }: NavChartProps) {
   const [showAccumulated, setShowAccumulated] = useState(false);
@@ -189,7 +196,7 @@ export function NavChart({
     }
   }, [isDragging, getTimestampFromEvent]);
 
-  // 鼠标松开完成拖拽
+  // 鼠标松开完成拖拽 - 直接放大
   const handleMouseUp = useCallback(() => {
     if (isDragging && dragStartTs !== null && dragEndTs !== null) {
       const minTs = Math.min(dragStartTs, dragEndTs);
@@ -204,6 +211,25 @@ export function NavChart({
     setDragStartTs(null);
     setDragEndTs(null);
   }, [isDragging, dragStartTs, dragEndTs]);
+
+  // 将当前缩放区间应用到定投配置
+  const handleApplyToDCA = useCallback(() => {
+    if (customRange && onApplyRange) {
+      const startDate = new Date(customRange.start);
+      const endDate = new Date(customRange.end);
+      const formatDateStr = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
+      onApplyRange({
+        startDate: formatDateStr(startDate),
+        endDate: formatDateStr(endDate),
+      });
+    }
+  }, [customRange, onApplyRange]);
 
   // 重置到原始范围
   const handleResetZoom = useCallback(() => {
@@ -519,6 +545,26 @@ export function NavChart({
           </button>
         )}
       </div>
+
+      {/* 已选中区间提示和应用按钮 */}
+      {customRange && onApplyRange && (
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-500/5 border border-blue-500/10 rounded-xl p-3 animate-slide-up">
+          <div className="flex items-center gap-2 text-sm">
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-slate-400">已选中区间：</span>
+            <span className="text-white font-medium">
+              {formatTimestamp(customRange.start)} — {formatTimestamp(customRange.end)}
+            </span>
+          </div>
+          <button
+            onClick={handleApplyToDCA}
+            className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl hover:from-blue-400 hover:to-blue-500 transition-all shadow-md shadow-blue-500/20"
+          >
+            <Check className="w-4 h-4" />
+            应用到定投配置
+          </button>
+        </div>
+      )}
 
       {/* 图例 */}
       <div className="flex flex-wrap items-center gap-6 text-sm relative z-10">
