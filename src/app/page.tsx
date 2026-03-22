@@ -360,8 +360,10 @@ export default function Home() {
       {/* Footer */}
       <footer className="w-full py-12 border-t border-white/5 bg-slate-950 mt-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <span className="text-xl font-bold text-white">FundAtelier</span>
-          <p className="mt-2 text-sm text-slate-600">专业的定投策略模拟工具</p>
+          <span className="text-xl font-bold text-white">DCA Simulator</span>
+          <p className="mt-4 text-xs text-amber-500/80">
+            ⚠️ 投资有风险，入市需谨慎。本工具仅供参考，不构成任何投资建议。
+          </p>
         </div>
       </footer>
     </div>

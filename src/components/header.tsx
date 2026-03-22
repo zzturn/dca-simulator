@@ -34,8 +34,9 @@ export function Header({ onSearch, isLoading }: HeaderProps) {
     <nav className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-white/5">
       <div className="flex justify-between items-center max-w-7xl mx-auto px-6 h-20">
         {/* Logo */}
-        <div className="flex items-center">
-          <span className="text-2xl font-bold tracking-tighter text-blue-400">FundAtelier</span>
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-bold tracking-tighter text-blue-400">DCA Simulator</span>
+          <span className="text-sm text-slate-500 hidden sm:inline">定投模拟器</span>
         </div>
 
         {/* Centralized Search Bar */}

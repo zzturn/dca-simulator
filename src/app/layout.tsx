@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "定投收益模拟器",
+  title: "DCA Simulator - 定投模拟器",
   description: "模拟基金定投收益，帮助您做出更明智的投资决策",
 };
 
