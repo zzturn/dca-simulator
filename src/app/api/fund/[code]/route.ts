@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fundApi } from "@/lib/fund-api";
 
+// 启用 ISR，1小时重新验证
+export const revalidate = 3600;
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
@@ -16,7 +19,12 @@ export async function GET(
     }
 
     const fundInfo = await fundApi.getFundInfo(code);
-    return NextResponse.json(fundInfo);
+    return NextResponse.json(fundInfo, {
+      headers: {
+        // 浏览器缓存1小时，CDN可缓存24小时（过期后后台重新验证）
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+      },
+    });
   } catch (error) {
     console.error("获取基金信息失败:", error);
     return NextResponse.json(

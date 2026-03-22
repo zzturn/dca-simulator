@@ -5,8 +5,14 @@ import type { Fund, NavPoint } from "./types";
 // 缓存目录
 const CACHE_DIR = path.join(process.cwd(), ".cache", "funds");
 
-// 热门基金代码（需要缓存的）
+// LRU 配置：最多缓存 100 只基金
+const MAX_CACHED_FUNDS = 100;
+
+// 热门基金代码（预热时优先加载）
 export const HOT_FUNDS = ["110020", "160119", "270042"];
+
+// LRU 访问记录（基金代码 -> 最后访问时间）
+const accessOrder: Map<string, number> = new Map();
 
 // 缓存数据结构
 interface FundInfoCache {
@@ -63,12 +69,34 @@ function shouldUpdateNav(cache: NavHistoryCache | null): boolean {
   return false;
 }
 
+// LRU 清理：删除最久未访问的基金缓存
+function evictLRU(excludeCode: string): void {
+  if (accessOrder.size < MAX_CACHED_FUNDS) return;
+
+  // 按访问时间排序，排除当前正在访问的基金
+  const entries = Array.from(accessOrder.entries())
+    .filter(([code]) => code !== excludeCode)
+    .sort((a, b) => a[1] - b[1]); // 升序，最早的在前
+
+  // 删除最旧的 10%
+  const toEvict = Math.ceil(entries.length * 0.1);
+  for (let i = 0; i < toEvict && i < entries.length; i++) {
+    const [code] = entries[i];
+    FundCache.clearCache(code);
+    accessOrder.delete(code);
+    console.log(`[Cache] LRU 淘汰: ${code}`);
+  }
+}
+
+// 更新访问时间
+function touchAccess(code: string): void {
+  accessOrder.set(code, Date.now());
+}
+
 // 缓存操作类
 export class FundCache {
   // 获取基金信息缓存
   static getFundInfo(code: string): Fund | null {
-    if (!HOT_FUNDS.includes(code)) return null;
-
     try {
       ensureCacheDir();
       const filePath = path.join(CACHE_DIR, `${code}_info.json`);
@@ -82,6 +110,9 @@ export class FundCache {
         return null;
       }
 
+      // 更新访问时间（LRU）
+      touchAccess(code);
+
       console.log(`[Cache] 命中: ${code} 基金信息`);
       return cache.data;
     } catch {
@@ -91,9 +122,10 @@ export class FundCache {
 
   // 保存基金信息缓存
   static setFundInfo(code: string, data: Fund): void {
-    if (!HOT_FUNDS.includes(code)) return;
-
     try {
+      // LRU 检查
+      evictLRU(code);
+
       ensureCacheDir();
       const filePath = path.join(CACHE_DIR, `${code}_info.json`);
       const cache: FundInfoCache = {
@@ -101,6 +133,10 @@ export class FundCache {
         cachedAt: Date.now(),
       };
       fs.writeFileSync(filePath, JSON.stringify(cache));
+
+      // 更新访问时间（LRU）
+      touchAccess(code);
+
       console.log(`[Cache] 保存: ${code} 基金信息`);
     } catch (err) {
       console.error(`[Cache] 保存失败: ${code}_info`, err);
@@ -109,8 +145,6 @@ export class FundCache {
 
   // 获取净值历史缓存
   static getNavHistory(code: string): NavHistoryCache | null {
-    if (!HOT_FUNDS.includes(code)) return null;
-
     try {
       ensureCacheDir();
       const filePath = path.join(CACHE_DIR, `${code}_nav.json`);
@@ -125,6 +159,9 @@ export class FundCache {
         return null;
       }
 
+      // 更新访问时间（LRU）
+      touchAccess(code);
+
       console.log(`[Cache] 命中: ${code} 净值历史 (${cache.data.length} 条)`);
       return cache;
     } catch {
@@ -134,9 +171,10 @@ export class FundCache {
 
   // 保存净值历史缓存
   static setNavHistory(code: string, data: NavPoint[]): void {
-    if (!HOT_FUNDS.includes(code)) return;
-
     try {
+      // LRU 检查
+      evictLRU(code);
+
       ensureCacheDir();
       const filePath = path.join(CACHE_DIR, `${code}_nav.json`);
 
@@ -149,6 +187,10 @@ export class FundCache {
         lastNavDate,
       };
       fs.writeFileSync(filePath, JSON.stringify(cache));
+
+      // 更新访问时间（LRU）
+      touchAccess(code);
+
       console.log(`[Cache] 保存: ${code} 净值历史 (${data.length} 条，最新: ${lastNavDate})`);
     } catch (err) {
       console.error(`[Cache] 保存失败: ${code}_nav`, err);

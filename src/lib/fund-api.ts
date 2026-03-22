@@ -1,5 +1,9 @@
 import type { Fund, NavPoint } from "./types";
-import { FundCache, HOT_FUNDS } from "./fund-cache";
+import { FundCache } from "./fund-cache";
+
+// 请求去重：存储进行中的请求
+const pendingFundInfoRequests = new Map<string, Promise<Fund>>();
+const pendingNavHistoryRequests = new Map<string, Promise<NavPoint[]>>();
 
 // API 地址
 const FUND_INFO_URL = "http://fundgz.1234567.com.cn/js";
@@ -46,7 +50,7 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
 
 // API客户端（服务端使用）
 class FundApiClient {
-  // 获取基金信息
+  // 获取基金信息（带请求去重）
   async getFundInfo(code: string): Promise<Fund> {
     // 检查缓存
     const cached = FundCache.getFundInfo(code);
@@ -54,6 +58,28 @@ class FundApiClient {
       return cached;
     }
 
+    // 检查是否有进行中的相同请求
+    const pending = pendingFundInfoRequests.get(code);
+    if (pending) {
+      console.log(`[FundAPI] 复用进行中的请求: ${code}`);
+      return pending;
+    }
+
+    // 创建新请求
+    const request = this.fetchFundInfo(code);
+    pendingFundInfoRequests.set(code, request);
+
+    try {
+      const result = await request;
+      return result;
+    } finally {
+      // 请求完成后清理
+      pendingFundInfoRequests.delete(code);
+    }
+  }
+
+  // 实际获取基金信息的逻辑
+  private async fetchFundInfo(code: string): Promise<Fund> {
     // 并行获取基本信息、详情和最新净值（用于累计净值）
     const [basicInfo, detailInfo, latestNav] = await Promise.allSettled([
       this.fetchBasicInfo(code),
@@ -205,7 +231,7 @@ class FundApiClient {
     }
   }
 
-  // 获取历史净值（支持缓存和增量更新）
+  // 获取历史净值（支持缓存、增量更新和请求去重）
   async getNavHistory(
     code: string,
     startDate?: string,
@@ -226,18 +252,29 @@ class FundApiClient {
       return result;
     }
 
-    // 缓存未命中或已过期
-    // 对于热门基金，尝试增量更新
-    if (HOT_FUNDS.includes(code)) {
-      return this.getNavHistoryWithCache(code, startDate, endDate);
+    // 检查是否有进行中的相同请求
+    const cacheKey = `${code}:${startDate || ''}:${endDate || ''}`;
+    const pending = pendingNavHistoryRequests.get(cacheKey);
+    if (pending) {
+      console.log(`[FundAPI] 复用进行中的净值请求: ${cacheKey}`);
+      return pending;
     }
 
-    // 非热门基金，直接获取全量数据
-    return this.fetchAllNavHistory(code, startDate, endDate);
+    // 创建新请求
+    const request = this.fetchNavHistoryWithCache(code, startDate, endDate);
+    pendingNavHistoryRequests.set(cacheKey, request);
+
+    try {
+      const result = await request;
+      return result;
+    } finally {
+      // 请求完成后清理
+      pendingNavHistoryRequests.delete(cacheKey);
+    }
   }
 
-  // 带缓存的净值获取（热门基金）
-  private async getNavHistoryWithCache(
+  // 带缓存的净值获取（所有基金）
+  private async fetchNavHistoryWithCache(
     code: string,
     startDate?: string,
     endDate?: string
