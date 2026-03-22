@@ -107,48 +107,15 @@ export function NavChart({
     return new Set(investRecords?.filter(r => r.amount > 0).map(r => r.date) || []);
   }, [investRecords, frequency]);
 
-  // 图表数据
+  // 图表数据 - 使用完整数据以支持每个交易日的详细信息
   const chartData = useMemo(() => {
     if (navHistory.length === 0) return [];
 
-    const navMap = new Map(navHistory.map(p => [p.date, p]));
-
-    const withTs = navHistory.map(p => ({
+    return navHistory.map(p => ({
       ...p,
       ts: new Date(p.date).getTime(),
     }));
-
-    if (withTs.length <= 1000) {
-      return withTs;
-    }
-
-    const sampleRate = Math.ceil(withTs.length / 1000);
-    const sampled: (NavPoint & { ts: number })[] = [];
-    for (let i = 0; i < withTs.length; i += sampleRate) {
-      sampled.push(withTs[i]);
-    }
-    const lastPoint = withTs[withTs.length - 1];
-    if (sampled[sampled.length - 1]?.date !== lastPoint.date) {
-      sampled.push(lastPoint);
-    }
-
-    const sampledDates = new Set(sampled.map(p => p.date));
-    investDates.forEach((date) => {
-      if (!sampledDates.has(date)) {
-        const navPoint = navMap.get(date);
-        if (navPoint) {
-          sampled.push({
-            ...navPoint,
-            ts: new Date(navPoint.date).getTime(),
-          });
-        }
-      }
-    });
-
-    sampled.sort((a, b) => a.ts - b.ts);
-
-    return sampled;
-  }, [navHistory, investDates]);
+  }, [navHistory]);
 
   // XAxis domain（支持自定义范围）
   const xAxisDomain = useMemo((): [number | string, number | string] => {
