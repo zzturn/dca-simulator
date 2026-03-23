@@ -36,8 +36,10 @@ Object.defineProperty(window, "matchMedia", {
 });
 
 // Mock requestAnimationFrame
-global.requestAnimationFrame = vi.fn((cb) => setTimeout(cb, 16));
-global.cancelAnimationFrame = vi.fn((id) => clearTimeout(id));
+// eslint-disable-next-line @typescript/no-explicit-any
+global.requestAnimationFrame = vi.fn((cb: any) => setTimeout(cb, 16)) as any;
+// eslint-disable-next-line @typescript/no-explicit-any
+global.cancelAnimationFrame = vi.fn((id: any) => clearTimeout(id)) as any;
 
 // Suppress console errors during tests (optional)
 // console.error = vi.fn();
