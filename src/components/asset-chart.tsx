@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { InvestmentRecord } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
+import { formatDateToSlash } from "@/lib/date-utils";
 import { Calendar, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 interface AssetChartProps {
@@ -81,25 +82,11 @@ export function AssetChart({ records }: AssetChartProps) {
     return Math.ceil((last.ts - first.ts) / (1000 * 60 * 60 * 24));
   }, [chartData]);
 
-  // 格式化X轴日期 - 显示完整日期
-  const formatXAxis = (ts: number) => {
-    if (!ts) return "";
-    const d = new Date(ts);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}/${month}/${day}`;
-  };
+  // 格式化X轴日期 - 使用共享函数
+  const formatXAxis = formatDateToSlash;
 
-  // 格式化日期
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}/${month}/${day}`;
-  };
+  // 格式化日期 - 使用共享函数
+  const formatDate = formatDateToSlash;
 
   // 自定义Tooltip
   const CustomTooltip = ({

@@ -1,6 +1,23 @@
 import { format, addDays, subDays, parseISO, isValid } from "date-fns";
 import type { TimeRange } from "./types";
 
+/**
+ * 格式化日期为 YYYY/MM/DD 格式（用于图表显示）
+ * @param dateOrTs - Date对象、日期字符串或时间戳
+ */
+export function formatDateToSlash(dateOrTs: Date | string | number): string {
+  if (!dateOrTs) return "";
+  const d = typeof dateOrTs === "number"
+    ? new Date(dateOrTs)
+    : typeof dateOrTs === "string"
+      ? parseISO(dateOrTs)
+      : dateOrTs;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}/${month}/${day}`;
+}
+
 // 格式化日期为 YYYY-MM-DD
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? parseISO(date) : date;

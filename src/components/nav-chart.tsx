@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Skeleton } from "./ui/skeleton";
 import type { NavPoint, InvestmentRecord, TimeRange, DCAConfig } from "@/lib/types";
-import { getTimeRangeStart } from "@/lib/date-utils";
+import { getTimeRangeStart, formatDateToSlash } from "@/lib/date-utils";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import { Calendar, ZoomIn, RotateCcw, Check } from "lucide-react";
 
@@ -32,7 +32,6 @@ interface NavChartProps {
   onTimeRangeChange: (range: TimeRange) => void;
   onApplyRange?: (range: DateRange) => void;
   isLoading?: boolean;
-  averageCost?: number;
 }
 
 const timeRangeOptions: { value: TimeRange; label: string }[] = [
@@ -76,7 +75,6 @@ export function NavChart({
   onTimeRangeChange,
   onApplyRange,
   isLoading,
-  averageCost,
 }: NavChartProps) {
   const [showAccumulated, setShowAccumulated] = useState(false);
 
@@ -247,24 +245,11 @@ export function NavChart({
     return map;
   }, [investRecords]);
 
-  // 格式化X轴日期 - 显示完整日期
-  const formatXAxis = (ts: number) => {
-    if (!ts) return "";
-    const d = new Date(ts);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}/${month}/${day}`;
-  };
+  // 格式化X轴日期 - 使用共享函数
+  const formatXAxis = formatDateToSlash;
 
-  // 格式化时间戳
-  const formatTimestamp = (ts: number) => {
-    const d = new Date(ts);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}/${month}/${day}`;
-  };
+  // 格式化时间戳 - 使用共享函数
+  const formatTimestamp = formatDateToSlash;
 
   // 自定义Tooltip
   const CustomTooltip = ({

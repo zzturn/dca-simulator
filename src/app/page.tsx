@@ -356,7 +356,6 @@ export default function Home() {
                   timeRange={timeRange}
                   onTimeRangeChange={setTimeRange}
                   onApplyRange={handleApplyRange}
-                  averageCost={result?.averageCost}
                 />
 
                 {/* 资产曲线 */}
