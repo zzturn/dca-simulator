@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback } from "react";
 import {
   AreaChart,
   Area,
@@ -12,12 +12,12 @@ import {
   ReferenceArea,
   Line,
 } from "recharts";
-import { cn } from "@/lib/utils";
 import { Skeleton } from "./ui/skeleton";
 import type { NavPoint, InvestmentRecord, TimeRange, DCAConfig } from "@/lib/types";
 import { getTimeRangeStart, formatDateToSlash } from "@/lib/date-utils";
-import { formatCurrency, formatNumber } from "@/lib/utils";
-import { Calendar, ZoomIn, RotateCcw, Check } from "lucide-react";
+import { ZoomIn, RotateCcw, Check } from "lucide-react";
+import { TimeRangeSelector, NavChartTooltip } from "./charts";
+import { useChartInteraction } from "@/hooks";
 
 interface DateRange {
   startDate: string;
@@ -33,14 +33,6 @@ interface NavChartProps {
   onApplyRange?: (range: DateRange) => void;
   isLoading?: boolean;
 }
-
-const timeRangeOptions: { value: TimeRange; label: string }[] = [
-  { value: "6m", label: "6个月" },
-  { value: "1y", label: "1年" },
-  { value: "3y", label: "3年" },
-  { value: "5y", label: "5年" },
-  { value: "all", label: "全部" },
-];
 
 // 创建自定义 Dot 渲染函数
 function createCustomDot(investDates: Set<string>) {
@@ -78,29 +70,11 @@ export function NavChart({
 }: NavChartProps) {
   const [showAccumulated, setShowAccumulated] = useState(false);
 
-  // 拖拽选择相关状态
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStartTs, setDragStartTs] = useState<number | null>(null);
-  const [dragEndTs, setDragEndTs] = useState<number | null>(null);
-  const [customRange, setCustomRange] = useState<{ start: number; end: number } | null>(null);
-  const chartRef = useRef<HTMLDivElement>(null);
-
-  // 计算时间范围的起始时间戳（支持自定义范围）
+  // 计算时间范围的起始时间戳
   const timeRangeStartTs = useMemo(() => {
-    if (customRange) {
-      return customRange.start;
-    }
     const startDate = getTimeRangeStart(timeRange);
     return startDate ? new Date(startDate).getTime() : null;
-  }, [timeRange, customRange]);
-
-  // 计算时间范围的结束时间戳（支持自定义范围）
-  const timeRangeEndTs = useMemo(() => {
-    if (customRange) {
-      return customRange.end;
-    }
-    return null; // 使用 dataMax
-  }, [customRange]);
+  }, [timeRange]);
 
   // 投资日期集合
   const investDates = useMemo(() => {
@@ -138,6 +112,24 @@ export function NavChart({
     });
   }, [navHistory, investRecords]);
 
+  // 使用图表交互 hook
+  const {
+    isDragging,
+    dragStartTs,
+    dragEndTs,
+    customRange,
+    chartRef,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    resetZoom,
+  } = useChartInteraction({
+    chartData,
+    timeRangeStartTs,
+    timeRangeEndTs: null,
+    customRange: null,
+  });
+
   // XAxis domain（支持自定义范围）
   const xAxisDomain = useMemo((): [number | string, number | string] => {
     if (customRange) {
@@ -146,59 +138,6 @@ export function NavChart({
     if (timeRangeStartTs === null) return ["dataMin", "dataMax"];
     return [timeRangeStartTs, "dataMax"];
   }, [timeRangeStartTs, customRange]);
-
-  // 获取图表坐标对应的时间戳
-  const getTimestampFromEvent = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!chartRef.current || !chartData.length) return null;
-
-    const rect = chartRef.current.getBoundingClientRect();
-    const chartWidth = rect.width - 50; // 减去 Y 轴宽度
-    const mouseX = e.clientX - rect.left - 50; // 减去 Y 轴偏移
-
-    if (mouseX < 0 || mouseX > chartWidth) return null;
-
-    const minTs = customRange?.start ?? timeRangeStartTs ?? chartData[0].ts;
-    const maxTs = customRange?.end ?? chartData[chartData.length - 1].ts;
-
-    const ratio = mouseX / chartWidth;
-    return minTs + ratio * (maxTs - minTs);
-  }, [chartData, customRange, timeRangeStartTs]);
-
-  // 鼠标按下开始拖拽
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const ts = getTimestampFromEvent(e);
-    if (ts !== null) {
-      setIsDragging(true);
-      setDragStartTs(ts);
-      setDragEndTs(ts);
-    }
-  }, [getTimestampFromEvent]);
-
-  // 鼠标移动更新拖拽范围
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    const ts = getTimestampFromEvent(e);
-    if (ts !== null) {
-      setDragEndTs(ts);
-    }
-  }, [isDragging, getTimestampFromEvent]);
-
-  // 鼠标松开完成拖拽 - 直接放大
-  const handleMouseUp = useCallback(() => {
-    if (isDragging && dragStartTs !== null && dragEndTs !== null) {
-      const minTs = Math.min(dragStartTs, dragEndTs);
-      const maxTs = Math.max(dragStartTs, dragEndTs);
-
-      // 只有当选择范围大于 7 天时才应用
-      if (maxTs - minTs > 7 * 24 * 60 * 60 * 1000) {
-        setCustomRange({ start: minTs, end: maxTs });
-      }
-    }
-    setIsDragging(false);
-    setDragStartTs(null);
-    setDragEndTs(null);
-  }, [isDragging, dragStartTs, dragEndTs]);
 
   // 将当前缩放区间应用到定投配置
   const handleApplyToDCA = useCallback(() => {
@@ -221,9 +160,9 @@ export function NavChart({
 
   // 重置到原始范围
   const handleResetZoom = useCallback(() => {
-    setCustomRange(null);
+    resetZoom();
     onTimeRangeChange("all");
-  }, [onTimeRangeChange]);
+  }, [resetZoom, onTimeRangeChange]);
 
   // 计算X轴刻度 - 使用当前显示范围的边界值
   const tickValues = useMemo(() => {
@@ -251,103 +190,6 @@ export function NavChart({
   // 格式化时间戳 - 使用共享函数
   const formatTimestamp = formatDateToSlash;
 
-  // 自定义Tooltip
-  const CustomTooltip = ({
-    active,
-    payload,
-    label,
-  }: {
-    active?: boolean;
-    payload?: Array<{
-      value: number;
-      dataKey: string;
-      payload?: {
-        date?: string;
-        ts?: number;
-        nav: number;
-        accumulatedNav?: number;
-        avgCost?: number;
-        amount?: number;
-        shares?: number;
-      };
-    }>;
-    label?: number;
-  }) => {
-    if (!active || !payload || payload.length === 0) return null;
-
-    const allPayloads = payload.map((p) => p.payload).filter(Boolean);
-    const firstPayload = allPayloads[0];
-
-    const dateStr = label ? formatTimestamp(label) : (firstPayload?.date || "");
-
-    const investRecord = firstPayload?.date
-      ? investPointsMap.get(firstPayload.date)
-      : dateStr
-      ? investPointsMap.get(dateStr)
-      : null;
-    const isInvestPoint = !!investRecord;
-
-    const navValue = firstPayload?.nav ?? payload.find((p) => p.dataKey === "nav")?.value;
-    const accumulatedValue = firstPayload?.accumulatedNav ?? payload.find((p) => p.dataKey === "accumulatedNav")?.value;
-    const avgCostValue = firstPayload?.avgCost;
-
-    return (
-      <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl p-3 min-w-[180px] border border-white/10">
-        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
-          <Calendar className="w-4 h-4 text-slate-400" />
-          <p className="text-sm font-medium text-white">{dateStr}</p>
-        </div>
-
-        <div className="space-y-1.5">
-          {navValue !== undefined && (
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-sm text-slate-400">单位净值</span>
-              <span className="text-sm font-semibold text-blue-400">
-                {navValue.toFixed(4)}
-              </span>
-            </div>
-          )}
-          {accumulatedValue !== undefined && showAccumulated && (
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-sm text-slate-400">累计净值</span>
-              <span className="text-sm font-semibold text-amber-400">
-                {accumulatedValue.toFixed(4)}
-              </span>
-            </div>
-          )}
-          {avgCostValue !== undefined && (
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-sm text-slate-400">持仓成本</span>
-              <span className="text-sm font-semibold text-emerald-400">
-                {avgCostValue.toFixed(4)}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {isInvestPoint && investRecord && (
-          <div className="mt-2 pt-2 border-t border-white/10">
-            <p className="text-xs font-medium text-[#f87171] mb-1.5">定投买入</p>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-slate-400">金额</span>
-                <span className="text-sm font-semibold text-[#f87171]">
-                  {formatCurrency(investRecord.amount)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-slate-400">份额</span>
-                <span className="text-sm font-medium text-slate-300">
-                  {formatNumber(investRecord.shares, 2)}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   if (isLoading) {
     return (
       <div className="bg-slate-900/40 rounded-[2rem] p-8 border border-white/5 space-y-6">
@@ -362,23 +204,7 @@ export function NavChart({
       {/* 标题和时间切换 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
         <h3 className="text-lg font-bold text-white">净值走势</h3>
-        <div className="flex gap-1 p-1 bg-slate-950 rounded-xl border border-white/5">
-          {timeRangeOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => onTimeRangeChange(option.value)}
-              className={cn(
-                "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
-                timeRange === option.value
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-500 hover:text-white"
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <TimeRangeSelector timeRange={timeRange} onTimeRangeChange={onTimeRangeChange} />
       </div>
 
       {/* 图表 */}
@@ -388,13 +214,6 @@ export function NavChart({
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={() => {
-          if (isDragging) {
-            setIsDragging(false);
-            setDragStartTs(null);
-            setDragEndTs(null);
-          }
-        }}
         style={{ cursor: isDragging ? 'crosshair' : 'default' }}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -441,7 +260,7 @@ export function NavChart({
               tickLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
               width={50}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<NavChartTooltip showAccumulated={showAccumulated} investPointsMap={investPointsMap} />} />
 
             {/* 单位净值渐变填充区域 */}
             <Area
