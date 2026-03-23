@@ -17,7 +17,6 @@ export interface MonthlyReturn {
  */
 export interface HeatmapColor {
   bgClass: string; // Tailwind 背景类
-  opacity: number; // 透明度 0.2-1.0
 }
 
 // 月份名称常量
@@ -98,33 +97,32 @@ export function calculateMonthlyReturns(
 
 /**
  * 根据收益率获取热力图颜色
- * 盈利使用 profit 色 (#f87171)，亏损使用 loss 色 (#4ade80)
- * 透明度根据收益/亏损幅度调整
+ * 使用 3 级颜色阶梯，高级感配色
+ * 盈利：透亮珊瑚红 → 标准金融红 → 稳重深红
+ * 亏损：晶莹薄荷绿 → 标准金融绿 → 深邃森林绿
  */
 export function getReturnColor(returnRate: number): HeatmapColor {
   const absRate = Math.abs(returnRate);
 
-  // 透明度映射：收益率 0% -> 0.2, 5% -> 0.4, 10% -> 0.6, 15%+ -> 1.0
-  const opacity = Math.min(1, 0.2 + absRate * 5);
-
   if (returnRate > 0) {
-    // 盈利 - 使用 financial-up 色 (#f87171)
-    return {
-      bgClass: "bg-financial-up",
-      opacity: Math.max(0.2, Math.min(1, opacity)),
-    };
+    // 盈利 - 3 级红色阶梯
+    let level: number;
+    if (absRate < 0.02) level = 1;       // 0~2%
+    else if (absRate < 0.05) level = 2;  // 2~5%
+    else level = 3;                       // 5%+
+
+    return { bgClass: `bg-profit-${level}` };
   } else if (returnRate < 0) {
-    // 亏损 - 使用 financial-down 色 (#4ade80)
-    return {
-      bgClass: "bg-financial-down",
-      opacity: Math.max(0.2, Math.min(1, opacity)),
-    };
+    // 亏损 - 3 级绿色阶梯
+    let level: number;
+    if (absRate < 0.02) level = 1;       // 0~2%
+    else if (absRate < 0.05) level = 2;  // 2~5%
+    else level = 3;                       // 5%+
+
+    return { bgClass: `bg-loss-${level}` };
   } else {
     // 持平 - 使用中性色
-    return {
-      bgClass: "bg-slate-600",
-      opacity: 0.3,
-    };
+    return { bgClass: "bg-slate-600/50" };
   }
 }
 

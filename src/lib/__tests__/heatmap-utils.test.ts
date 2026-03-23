@@ -121,39 +121,49 @@ describe("heatmap-utils", () => {
   });
 
   describe("getReturnColor", () => {
-    it("should return profit color for positive returns", () => {
-      const color = getReturnColor(0.1); // 10% profit
-      expect(color.bgClass).toBe("bg-financial-up");
-      expect(color.opacity).toBeGreaterThan(0.2);
+    it("should return profit-3 color for 10% profit (high profit)", () => {
+      const color = getReturnColor(0.1); // 10% profit (5%+ 区间)
+      expect(color.bgClass).toBe("bg-profit-3");
     });
 
-    it("should return loss color for negative returns", () => {
-      const color = getReturnColor(-0.1); // 10% loss
-      expect(color.bgClass).toBe("bg-financial-down");
-      expect(color.opacity).toBeGreaterThan(0.2);
+    it("should return loss-3 color for 10% loss (high loss)", () => {
+      const color = getReturnColor(-0.1); // 10% loss (5%+ 区间)
+      expect(color.bgClass).toBe("bg-loss-3");
     });
 
     it("should return neutral color for zero returns", () => {
       const color = getReturnColor(0);
-      expect(color.bgClass).toBe("bg-slate-600");
-      expect(color.opacity).toBe(0.3);
+      expect(color.bgClass).toBe("bg-slate-600/50");
     });
 
-    it("should increase opacity with higher returns", () => {
-      const color1 = getReturnColor(0.02); // 2% profit
-      const color2 = getReturnColor(0.1); // 10% profit
-
-      expect(color2.opacity).toBeGreaterThan(color1.opacity);
+    it("should return profit-1 for small profit (0-2%)", () => {
+      expect(getReturnColor(0.01).bgClass).toBe("bg-profit-1");
+      expect(getReturnColor(0.019).bgClass).toBe("bg-profit-1");
     });
 
-    it("should cap opacity at 1.0", () => {
-      const color = getReturnColor(0.5); // 50% profit
-      expect(color.opacity).toBeLessThanOrEqual(1);
+    it("should return profit-2 for 2-5% profit", () => {
+      expect(getReturnColor(0.02).bgClass).toBe("bg-profit-2");
+      expect(getReturnColor(0.049).bgClass).toBe("bg-profit-2");
     });
 
-    it("should have minimum opacity of 0.2", () => {
-      const color = getReturnColor(0.001); // 0.1% profit
-      expect(color.opacity).toBeGreaterThanOrEqual(0.2);
+    it("should return profit-3 for 5%+ profit", () => {
+      expect(getReturnColor(0.06).bgClass).toBe("bg-profit-3");
+      expect(getReturnColor(0.50).bgClass).toBe("bg-profit-3");
+    });
+
+    it("should return loss-1 for small loss (0-2%)", () => {
+      expect(getReturnColor(-0.01).bgClass).toBe("bg-loss-1");
+      expect(getReturnColor(-0.019).bgClass).toBe("bg-loss-1");
+    });
+
+    it("should return loss-2 for 2-5% loss", () => {
+      expect(getReturnColor(-0.02).bgClass).toBe("bg-loss-2");
+      expect(getReturnColor(-0.049).bgClass).toBe("bg-loss-2");
+    });
+
+    it("should return loss-3 for 5%+ loss", () => {
+      expect(getReturnColor(-0.06).bgClass).toBe("bg-loss-3");
+      expect(getReturnColor(-0.50).bgClass).toBe("bg-loss-3");
     });
   });
 

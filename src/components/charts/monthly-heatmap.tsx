@@ -38,7 +38,7 @@ function HeatmapCell({
     );
   }
 
-  const { bgClass, opacity } = getReturnColor(data.returnRate);
+  const { bgClass } = getReturnColor(data.returnRate);
   const isProfit = data.returnRate >= 0;
 
   return (
@@ -53,7 +53,6 @@ function HeatmapCell({
           "hover:scale-110 hover:z-10 hover:shadow-lg cursor-pointer",
           bgClass
         )}
-        style={{ opacity }}
       >
         <span
           className={cn(
@@ -163,22 +162,20 @@ export function MonthlyHeatmap({ records, className }: MonthlyHeatmapProps) {
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-bold text-slate-500">亏损</span>
             <div className="flex gap-0.5">
-              {[0.2, 0.4, 0.6, 0.8, 1].map((op) => (
+              {["bg-loss-1", "bg-loss-2", "bg-loss-3"].map((cls) => (
                 <div
-                  key={op}
-                  className="w-3 h-3 rounded-sm bg-financial-down"
-                  style={{ opacity: op }}
+                  key={cls}
+                  className={cn("w-3 h-3 rounded-sm", cls)}
                 />
               ))}
             </div>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="flex gap-0.5">
-              {[1, 0.8, 0.6, 0.4, 0.2].map((op) => (
+              {["bg-profit-1", "bg-profit-2", "bg-profit-3"].map((cls) => (
                 <div
-                  key={op}
-                  className="w-3 h-3 rounded-sm bg-financial-up"
-                  style={{ opacity: op }}
+                  key={cls}
+                  className={cn("w-3 h-3 rounded-sm", cls)}
                 />
               ))}
             </div>
