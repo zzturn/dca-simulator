@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceArea,
+  Line,
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "./ui/skeleton";
@@ -31,6 +32,7 @@ interface NavChartProps {
   onTimeRangeChange: (range: TimeRange) => void;
   onApplyRange?: (range: DateRange) => void;
   isLoading?: boolean;
+  averageCost?: number;
 }
 
 const timeRangeOptions: { value: TimeRange; label: string }[] = [
@@ -74,6 +76,7 @@ export function NavChart({
   onTimeRangeChange,
   onApplyRange,
   isLoading,
+  averageCost,
 }: NavChartProps) {
   const [showAccumulated, setShowAccumulated] = useState(false);
 
@@ -108,14 +111,34 @@ export function NavChart({
   }, [investRecords, frequency]);
 
   // 图表数据 - 使用完整数据以支持每个交易日的详细信息
+  // 包含每天的平均成本（从 investRecords 计算）
   const chartData = useMemo(() => {
     if (navHistory.length === 0) return [];
 
-    return navHistory.map(p => ({
-      ...p,
-      ts: new Date(p.date).getTime(),
-    }));
-  }, [navHistory]);
+    // 创建日期到平均成本的映射
+    const avgCostMap = new Map<string, number>();
+    if (investRecords) {
+      for (const record of investRecords) {
+        if (record.totalShares > 0) {
+          avgCostMap.set(record.date, record.totalCost / record.totalShares);
+        }
+      }
+    }
+
+    // 前向填充：对于没有投资记录的日期，使用前一天的平均成本
+    let lastAvgCost: number | undefined;
+    return navHistory.map(p => {
+      const avgCost = avgCostMap.get(p.date);
+      if (avgCost !== undefined) {
+        lastAvgCost = avgCost;
+      }
+      return {
+        ...p,
+        ts: new Date(p.date).getTime(),
+        avgCost: lastAvgCost, // 使用最近的有效平均成本
+      };
+    });
+  }, [navHistory, investRecords]);
 
   // XAxis domain（支持自定义范围）
   const xAxisDomain = useMemo((): [number | string, number | string] => {
@@ -258,6 +281,7 @@ export function NavChart({
         ts?: number;
         nav: number;
         accumulatedNav?: number;
+        avgCost?: number;
         amount?: number;
         shares?: number;
       };
@@ -280,6 +304,7 @@ export function NavChart({
 
     const navValue = firstPayload?.nav ?? payload.find((p) => p.dataKey === "nav")?.value;
     const accumulatedValue = firstPayload?.accumulatedNav ?? payload.find((p) => p.dataKey === "accumulatedNav")?.value;
+    const avgCostValue = firstPayload?.avgCost;
 
     return (
       <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl p-3 min-w-[180px] border border-white/10">
@@ -302,6 +327,14 @@ export function NavChart({
               <span className="text-sm text-slate-400">累计净值</span>
               <span className="text-sm font-semibold text-amber-400">
                 {accumulatedValue.toFixed(4)}
+              </span>
+            </div>
+          )}
+          {avgCostValue !== undefined && (
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-slate-400">持仓成本</span>
+              <span className="text-sm font-semibold text-emerald-400">
+                {avgCostValue.toFixed(4)}
               </span>
             </div>
           )}
@@ -466,6 +499,17 @@ export function NavChart({
                 dot={false}
               />
             )}
+
+            {/* 持仓成本线 - 动态显示每天的平均成本 */}
+            <Line
+              type="stepAfter"
+              dataKey="avgCost"
+              stroke="#10b981"
+              strokeDasharray="5 5"
+              strokeWidth={2}
+              dot={false}
+              connectNulls={false}
+            />
 
             {/* 拖拽选择区域 */}
             {isDragging && dragStartTs !== null && dragEndTs !== null && (

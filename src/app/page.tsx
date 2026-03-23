@@ -309,7 +309,7 @@ export default function Home() {
 
                 {/* Bento Grid 关键指标 */}
                 {result && (
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="bg-slate-900/40 p-6 rounded-[1.5rem] space-y-2 border border-white/5 hover:border-white/10 transition-colors">
                       <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">累计投入</div>
                       <div className="text-xl font-bold text-white">
@@ -331,6 +331,15 @@ export default function Home() {
                       <div className="text-xl font-bold text-white">{result.investCount} 期</div>
                     </div>
                     <div className="bg-slate-900/40 p-6 rounded-[1.5rem] space-y-2 border border-white/5 hover:border-white/10 transition-colors">
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">盈利天数占比</div>
+                      <div className={cn(
+                        "text-xl font-bold",
+                        result.profitDaysRatio >= 0.5 ? "text-[#f87171]" : "text-[#4ade80]"
+                      )}>
+                        {(result.profitDaysRatio * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                    <div className="bg-slate-900/40 p-6 rounded-[1.5rem] space-y-2 border border-white/5 hover:border-white/10 transition-colors">
                       <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">最大回撤</div>
                       <div className="text-xl font-bold text-[#4ade80]">
                         -{(result.maxDrawdown * 100).toFixed(1)}%
@@ -347,6 +356,7 @@ export default function Home() {
                   timeRange={timeRange}
                   onTimeRangeChange={setTimeRange}
                   onApplyRange={handleApplyRange}
+                  averageCost={result?.averageCost}
                 />
 
                 {/* 资产曲线 */}

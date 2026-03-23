@@ -58,6 +58,7 @@ export interface SimulationResult {
   investCount: number; // 定投次数
   maxDrawdown: number; // 最大回撤
   maxDrawdownDate: string; // 最大回撤日期
+  profitDaysRatio: number; // 盈利天数占比 (0-1)
 }
 
 // 时间范围

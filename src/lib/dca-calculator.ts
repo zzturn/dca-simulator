@@ -190,7 +190,7 @@ export function simulateDCA(
 
   // 生成每日资产记录（用于图表显示）
   const records: InvestmentRecord[] = [];
-  let peak = 0;
+  let peakNav = 0;
   let maxDrawdown = 0;
   let maxDrawdownDate = "";
 
@@ -226,11 +226,12 @@ export function simulateDCA(
       profitRate,
     });
 
-    // 更新最大回撤
-    if (currentValue > peak) {
-      peak = currentValue;
+    // 更新最大回撤（基于净值计算）
+    const currentNav = navPoint.nav;
+    if (currentNav > peakNav) {
+      peakNav = currentNav;
     }
-    const drawdown = peak > 0 ? (peak - currentValue) / peak : 0;
+    const drawdown = peakNav > 0 ? (peakNav - currentNav) / peakNav : 0;
     if (drawdown > maxDrawdown) {
       maxDrawdown = drawdown;
       maxDrawdownDate = date;
@@ -242,6 +243,10 @@ export function simulateDCA(
   }
 
   const lastRecord = records[records.length - 1];
+
+  // 计算盈利天数占比
+  const profitableDays = records.filter(r => r.currentValue >= r.totalCost).length;
+  const profitDaysRatio = records.length > 0 ? profitableDays / records.length : 0;
 
   // 为投资记录添加投资信息
   const investmentDates = new Map<string, { amount: number; shares: number }>();
@@ -272,6 +277,7 @@ export function simulateDCA(
     investCount: investRecords.length,
     maxDrawdown,
     maxDrawdownDate,
+    profitDaysRatio,
   };
 }
 

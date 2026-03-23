@@ -11,6 +11,7 @@ import {
   Hash,
   Target,
   AlertTriangle,
+  Calendar,
 } from "lucide-react";
 
 interface MetricsCardsProps {
@@ -67,6 +68,15 @@ export function MetricsCards({ result }: MetricsCardsProps) {
       format: (v: number) => formatNumber(v, 4),
       icon: Target,
       iconBg: "bg-wealth/20 text-wealth",
+    },
+    {
+      label: "盈利天数占比",
+      value: result.profitDaysRatio,
+      format: (v: number) => formatPercent(v),
+      highlight: true,
+      isProfit: result.profitDaysRatio >= 0.5,
+      icon: Calendar,
+      iconBg: result.profitDaysRatio >= 0.5 ? "bg-profit-container text-profit" : "bg-loss-container text-loss",
     },
     {
       label: "最大回撤",
