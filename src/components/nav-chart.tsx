@@ -122,6 +122,7 @@ export function NavChart({
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    handleMouseLeave,
     resetZoom,
   } = useChartInteraction({
     chartData,
@@ -214,6 +215,16 @@ export function NavChart({
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onKeyDown={(e) => {
+          // ESC 重置缩放（可访问性支持）
+          if (e.key === 'Escape' && customRange) {
+            resetZoom();
+          }
+        }}
+        tabIndex={0}
+        role="img"
+        aria-label={`净值走势图表，从 ${formatDateToSlash(chartData[0]?.ts)} 到 ${formatDateToSlash(chartData[chartData.length - 1]?.ts)}`}
         style={{ cursor: isDragging ? 'crosshair' : 'default' }}
       >
         <ResponsiveContainer width="100%" height="100%">

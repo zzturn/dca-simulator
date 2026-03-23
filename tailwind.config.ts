@@ -46,6 +46,9 @@ const config: Config = {
           dark: "#15803d",
           container: "#052e16",
         },
+        // 热力图专用颜色（与 profit/loss 一致）
+        "financial-up": "#f87171", // 盈利 - 红色
+        "financial-down": "#4ade80", // 亏损 - 绿色
         // 文字层级
         "on-surface": "#f1f5f9",
         "on-surface-variant": "#94a3b8",

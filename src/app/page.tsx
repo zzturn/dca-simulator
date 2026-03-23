@@ -6,6 +6,7 @@ import { NavChart } from "@/components/nav-chart";
 import { StrategyConfig } from "@/components/strategy-config";
 import { ReturnDisplay } from "@/components/return-display";
 import { AssetChart } from "@/components/asset-chart";
+import { MonthlyHeatmap } from "@/components/charts/monthly-heatmap";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { Fund, NavPoint, DCAConfig, SimulationResult, TimeRange } from "@/lib/types";
@@ -360,6 +361,11 @@ export default function Home() {
 
                 {/* 资产曲线 */}
                 {result && <AssetChart records={result.records} />}
+
+                {/* 月度收益热力图 */}
+                {result && result.records.length > 0 && (
+                  <MonthlyHeatmap records={result.records} />
+                )}
               </div>
             </div>
           </div>
