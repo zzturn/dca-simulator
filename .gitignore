@@ -41,3 +41,6 @@ next-env.d.ts
 # OS
 .DS_Store
 Thumbs.db
+
+# MCP config (may contain tokens)
+.mcp.json
