@@ -197,30 +197,6 @@ export class FundCache {
     }
   }
 
-  // 更新净值历史（增量追加新数据）
-  static updateNavHistory(code: string, newData: NavPoint[], existingData: NavPoint[]): NavPoint[] {
-    if (newData.length === 0) return existingData;
-
-    // 创建日期集合用于去重
-    const existingDates = new Set(existingData.map(p => p.date));
-    const uniqueNewData = newData.filter(p => !existingDates.has(p.date));
-
-    if (uniqueNewData.length === 0) {
-      return existingData;
-    }
-
-    // 合并并排序
-    const merged = [...existingData, ...uniqueNewData];
-    merged.sort((a, b) => a.date.localeCompare(b.date));
-
-    console.log(`[Cache] 增量更新: ${code} 新增 ${uniqueNewData.length} 条`);
-
-    // 保存更新后的缓存
-    this.setNavHistory(code, merged);
-
-    return merged;
-  }
-
   // 清除指定基金的缓存
   static clearCache(code: string): void {
     try {

@@ -63,36 +63,3 @@ export interface SimulationResult {
 
 // 时间范围
 export type TimeRange = "all" | "5y" | "3y" | "1y" | "6m";
-
-// API响应类型
-export interface FundInfoApiResponse {
-  fundcode: string;
-  name: string;
-  type: string;
-  manager: string;
-  fundmanager: string;
-  fundcompany: string;
-  establishmentdate: string;
-  dwjz: string;
-  ljjz: string;
-  jzrq: string;
-  dayGrowth: string;
-}
-
-export interface NavHistoryApiResponse {
-  fundcode: string;
-  name: string;
-  jzrq: string;
-  dwjz: string;
-  ljjz: string;
-  jzzzl: string;
-}
-
-export interface PagedNavResponse {
-  fundcode: string;
-  name: string;
-  pageIndex: number;
-  pageSize: number;
-  totalCount: number;
-  data: NavHistoryApiResponse[];
-}
